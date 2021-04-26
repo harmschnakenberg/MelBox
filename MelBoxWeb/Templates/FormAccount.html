@@ -1,0 +1,58 @@
+﻿<div id="id01" >
+    <div class="w3-modal-content w3-card-4 w3-animate-zoom" style="max-width:600px">
+
+        <div class="w3-center">
+            <br>
+            <span onclick="document.getElementById('id01').style.display='none'" class="w3-button w3-xlarge w3-hover-red w3-display-topright" title="Close Modal">&times;</span>
+            <i class='w3-circle w3-margin-top w3-xxlarge material-icons-outlined'>assignment_ind</i>
+        </div>
+
+        <form class="w3-container" action="/account/update" method="post">
+            <div class="w3-section">
+                <input name="Id" type="hidden" value="##Id##" />
+
+                <label><b>Benutzername</b></label>
+                <input name="name" type="text" class="w3-input w3-border w3-margin-bottom" placeholder="Benutzernamen eingeben" value="##Name##">
+
+                <label><b>Password</b></label>
+                <input class="w3-input w3-border w3-margin-bottom" type="password" placeholder="Passwort" name="password">
+
+                <input name="Accesslevel" type="hidden" value="##Accesslevel##" />
+
+                <input name="CompanyId" type="number" value="##CompanyId##" readonly />
+                <div class="w3-card  w3-margin-bottom">
+                    <h3>Firma</h3>
+                    <select class="w3-select w3-border " name="option">
+                        <option value="##CompanyId##" selected>##CompanyName##</option>
+                        <!--
+                            <option value="2">Option 2</option>
+                            <option value="3">Option 3</option>-->
+                        -->
+                        ##CompanyList##
+                    </select>
+                </div>
+
+                <label><b>Email</b></label>
+                <input name="viaEmail" type="checkbox" class="w3-check" value="##viaEmail##" />
+                <input name="email" type="email" class="w3-input w3-border w3-margin-bottom" placeholder="Emailadresse" value="##Email##" pattern="[^@\s]+@[^@\s]+">
+
+                <label><b>Mobiltelefon</b></label>
+                <input name="viaPhone" type="checkbox" class="w3-check" value="##viaPhone##" />
+                <input name="phone" type="tel" placeholder="+49-421-123456789" pattern="\+[0-9]+-[0-9]+-[0-9]+">
+
+                <input name="KeyWord" type="text" value="##KeyWord##" readonly />
+
+                <label><b>Maximale Zeit zwischen Meldungen</b></label>
+                <input name="MaxInactiveHours" type="number" value="##MaxInactiveHours##" /> Stunden
+
+                <button class="w3-button w3-block w3-teal w3-section w3-padding" type="submit">Speichern</button>
+                <input class="w3-check w3-margin-top" type="checkbox" checked="checked"> Remember me
+            </div>
+        </form>
+
+        <div class="w3-container w3-border-top w3-padding-16 w3-light-grey">
+            <button onclick="document.getElementById('id01').style.display='none'" type="button" class="w3-button w3-red">Cancel</button>            
+        </div>
+
+    </div>
+</div>
