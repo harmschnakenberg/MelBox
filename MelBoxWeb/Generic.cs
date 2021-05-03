@@ -42,7 +42,7 @@ namespace MelBoxWeb
 
         internal static string FromTable(System.Data.DataTable dt, bool authorized = false, string root = "x")
         {
-            string html = "<table class='w3-table-all w3-margin'>\n";
+            string html = "<table class='w3-table-all'>\n";
             //add header row
             html += "<tr>";
             
@@ -52,8 +52,7 @@ namespace MelBoxWeb
             }
 
             for (int i = 0; i < dt.Columns.Count; i++)
-                html += "<th>" + dt.Columns[i].ColumnName + "</th>";
-
+                html += "<th>" + dt.Columns[i].ColumnName.Replace('_', ' ') + "</th>";
 
             html += "</tr>\n";
 
@@ -79,6 +78,19 @@ namespace MelBoxWeb
                                 )
                             ) + "</td>";
                     }
+                    else if (dt.Columns[j].ColumnName.Contains("Via"))
+                    {
+                        if (int.TryParse(dt.Rows[i][j].ToString(), out int via))
+                        {                           
+                            bool phone = 0 != (via & (int)MelBoxSql.Tab_Contact.Communication.Sms);
+                            bool email = 0 != (via & (int)MelBoxSql.Tab_Contact.Communication.Email);
+
+                            html += "<td>";
+                            if (phone) html += "<span class='material-icons-outlined'>smartphone</span>";
+                            if (email) html += "<span class='material-icons-outlined'>email</span>";
+                            html += "</td>";
+                        }
+                    }
                     else
                     {
                         html += "<td>" + dt.Rows[i][j].ToString() + "</td>";
@@ -90,6 +102,112 @@ namespace MelBoxWeb
             return html;
         }
 
+        internal static string FromShiftTable(System.Data.DataTable dt, MelBoxSql.Contact user)
+        {
+            if (user == null) return string.Empty;
+
+            string html = "<table class='w3-table w3-bordered'>\n";
+            //add header row
+            html += "<tr>";
+
+            if (user.Id > 0)
+            {
+                html += "<th>Edit</th>";
+            }
+
+            //for (int i = 0; i < dt.Columns.Count; i++)
+                html += "<th>Nr</th><th>Name</th><th>Via</th><th>Tag</th><th>Datum</th><th>Zeitraum</th>";
+
+            html += "</tr>\n";
+
+            List<DateTime> holydays = MelBoxSql.Tab_Shift.Holydays(DateTime.Now);
+
+            //add rows
+            for (int i = 0; i < dt.Rows.Count; i++)
+            {
+                int.TryParse(dt.Rows[i][0].ToString(), out int shiftId);
+                int.TryParse(dt.Rows[i][1].ToString(), out int shiftContactId);
+                string contactName = dt.Rows[i][2].ToString();
+                int.TryParse(dt.Rows[i][3].ToString(), out int via);
+                string day = dt.Rows[i][4].ToString();
+                DateTime.TryParse(dt.Rows[i][5].ToString(), out DateTime date);
+                int.TryParse(dt.Rows[i][6].ToString(), out int start);
+                int.TryParse(dt.Rows[i][7].ToString(), out int end);
+
+                if (holydays.Contains(date)) //Feiertag?
+                    html += "<tr class='w3-pale-red'>";                
+                else if (day == "Sa" || day == "So") //Wochenende ?              
+                    html += "<tr class='w3-sand'>";
+                else                
+                    html += "<tr>";
+                
+                #region Editier-Button
+
+                if (user.Accesslevel >= Server.Level_Admin || user.Id == shiftContactId || shiftId == 0 )
+                {
+                    string route = shiftId == 0 ? date.ToShortDateString() : shiftId.ToString();
+
+                    html += "<td>" +
+                        "<a href='/shift/" + route + "'><i class='material-icons-outlined'>build</i></a>" +
+                        "</td>";
+                }
+                else
+                {
+                    html += "<td>&nbsp;</td>";
+                }
+                #endregion
+
+                #region Bereitschafts-Id
+                html += "<td>" + shiftId + "</td>";
+                #endregion
+
+                #region Name
+                html += "<td>" + contactName + "</td>";
+                #endregion
+
+                #region Sendeweg
+                bool phone = 0 != (via & (int)MelBoxSql.Tab_Contact.Communication.Sms);
+                bool email = 0 != (via & (int)MelBoxSql.Tab_Contact.Communication.Email);
+
+                html += "<td>";
+                if (phone) html += "<span class='material-icons-outlined'>smartphone</span>";
+                if (email) html += "<span class='material-icons-outlined'>email</span>";
+                html += "</td>";
+                #endregion
+
+                #region Tag
+                html += "<td>" + day + "</td>";
+                #endregion
+
+                #region Datum
+                html += "<td>" + date.ToShortDateString() + "</td>";
+                #endregion
+
+                #region Beginn
+                double s = Math.Round(start / 0.48);
+                double e = Math.Round(end / 0.48);
+
+                if (s + e == 0) s = 50;
+                string sHour = (start > 0) ? start + "&nbsp;Uhr" : string.Empty;
+                string eHour = (end > 0) ? end + "&nbsp;Uhr" : string.Empty;
+
+                html += "<td>" +
+                        "<div class='w3-row w3-pale-blue' style='min-width:240px'>" +
+                        $"  <div class='w3-col w3-right-align' style='width:{s - 1}%'>{sHour}&nbsp;</div>" +
+                        $"  <div class='w3-col w3-teal' style='width:{50 - s}%'>&nbsp;</div>" +
+                        $"  <div class='w3-col w3-teal w3-border-left' style='width:{e}%'>&nbsp;</div>" +
+                        $"  <div class='w3-col w3-left-align' style='width:{50 - e}%'>&nbsp;{eHour}</div>" +
+                        " </div>" +
+                        "</td>";
+                # endregion
+
+                html += "</tr>\n";
+            }
+            html += "</table>\n";
+            return html;
+        }
+
+
         internal static string WeekDayCheckBox(MelBoxSql.Tab_Message.BlockedDays blockedDays)
         {
             StringBuilder html = new StringBuilder("<span>");
@@ -99,13 +217,17 @@ namespace MelBoxWeb
                 if (day == MelBoxSql.Tab_Message.BlockedDays.NaN || day == MelBoxSql.Tab_Message.BlockedDays.None) continue;
 
                 string check = blockedDays.HasFlag(day) ? "checked" : string.Empty;
-                html.Append($"<input name={day} class='w3-check' type='checkbox' {check}>" + Environment.NewLine);
+                html.Append($"<input name={day} class='w3-check' type='checkbox' {check} disabled>" + Environment.NewLine);
                 html.Append($"<label>{day} </label>");
             }
 
             return html.Append("</span>").ToString();
         }
     
+        internal static string ButtonNew(string root)
+        {
+            return $"<button class='w3-button w3-block w3-blue w3-section w3-padding w3-col w3-quarter type='submit' formaction='/{root}/new'>Neu</button>";
+        }
 
     }
 }

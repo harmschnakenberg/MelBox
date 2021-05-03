@@ -17,11 +17,10 @@ namespace MelBoxSql
             return Sql.SelectDataTable("Empfangen", query);
         }
 
-        public static System.Data.DataTable Recieved_View(int id)
+        public static System.Data.DataTable Recieved_View(int count)
         {
-            string query = "SELECT Nr, Von, Inhalt FROM " + Recieved_ViewName +
-                            " WHERE Nr = " + id + ";" ;
-;
+            string query = "SELECT Nr, datetime(Empfangen, 'localtime') AS Empfangen, Von, Inhalt FROM " + Recieved_ViewName +
+                            " ORDER BY Empfangen DESC LIMIT " + count ;
 
             return Sql.SelectDataTable("Empfangen", query);
         }
@@ -38,6 +37,15 @@ namespace MelBoxSql
 
             return Sql.SelectDataTable("Gesendet", query);
         }
+
+        public static System.Data.DataTable Sent_View(int count)
+        {
+            string query = "SELECT Gesendet, An, Inhalt, Via, Sendestatus FROM " + Sent_ViewName +
+                            " ORDER BY Gesendet DESC LIMIT " + count;
+
+            return Sql.SelectDataTable("Gesendet", query);
+        }
+
 
         public static System.Data.DataTable Overdue_View()
         {
@@ -59,7 +67,7 @@ namespace MelBoxSql
 
         public static System.Data.DataTable Shift_View(string name = "")
         {
-            string query = "SELECT * FROM " + Blocked_ViewName;
+            string query = "SELECT * FROM " + Shift_ViewName;
 
             if (name.Length > 2) query += " WHERE Name LIKE '%" + name + "%'";
 

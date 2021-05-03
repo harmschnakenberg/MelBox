@@ -13,9 +13,9 @@ namespace MelBoxSql
             Dictionary<string, object> set = new Dictionary<string, object>();
 
             if (company.Id > 0) set.Add(nameof(company.Id), company.Id);
-            if (company.Name.Length > 0) set.Add(nameof(company.Name), company.Name);
-            if (company.Address.Length > 0) set.Add(nameof(company.Address), company.Address);
-            if (company.City.Length > 0) set.Add(nameof(company.City), company.City);
+            if (company.Name != null) set.Add(nameof(company.Name), company.Name);
+            if (company.Address != null) set.Add(nameof(company.Address), company.Address);
+            if (company.City != null) set.Add(nameof(company.City), company.City);
 
             return set;
         }
@@ -80,6 +80,40 @@ namespace MelBoxSql
 
             return company;
         }
+
+        public static System.Data.DataTable SelectCompanyAll(int limitId = 0)
+        {
+            string query = "SELECT Id, Name, City AS Ort FROM " + TableName;
+
+            if (limitId > 0)
+                query += " WHERE Id = " + limitId;
+
+            return Sql.SelectDataTable("Firmen", query, null);
+        }
+
+
+        public static string SelectCompanyAllToHtmlOption(int exceptId = 0)
+        {
+            string companies = string.Empty;
+
+            System.Data.DataTable dt = SelectCompanyAll();
+
+            for (int i = 0; i < dt.Rows.Count; i++)
+            {
+                //<option value="2">Option 2</option>
+
+                int id = int.Parse(dt.Rows[i][0].ToString());
+                string name = dt.Rows[i][1].ToString();
+                string city = dt.Rows[i][2].ToString();
+                city = System.Text.RegularExpressions.Regex.Replace(city, @"\d", "");
+
+                if (id != exceptId)               
+                    companies +=$"<option value='{id}'>{name}, {city}</option>" + Environment.NewLine;
+            }
+
+            return companies;
+        }
+
     }
 
     public class Company

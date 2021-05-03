@@ -127,6 +127,30 @@ namespace MelBoxSql
             return contact;
         }
 
+        public static System.Data.DataTable SelectContactList(int accesslevel, int contactId = 0, string operation = "<=")
+        {          
+            string query = "SELECT Contact.Id AS Id, Contact.Name AS Name, Company.Name AS Firma, Company.City AS Ort" +
+                " FROM " + TableName + 
+                " JOIN " + Tab_Company.TableName + " ON Company.Id = Contact.CompanyId " +
+                " WHERE Accesslevel " + operation + " " + accesslevel ;
+
+            if (contactId > 0)
+                query += " AND Contact.Id = " + contactId;
+
+            return Sql.SelectDataTable("Kontakte", query, null);
+        }
+
+        public static System.Data.DataTable SelectWatchedContactList()
+        {
+            string query = "SELECT Contact.Id AS Id, Contact.Name AS Name, Company.Name AS Firma, substr(Company.City, instr(Company.City,' ') + 1) AS Ort, MaxInactiveHours || ' Std.' AS Max_Inaktiv" +
+                " FROM " + TableName +
+                " JOIN " + Tab_Company.TableName + " ON Company.Id = Contact.CompanyId " +
+                " WHERE MaxInactiveHours > 0 " +
+                " ORDER BY MaxInactiveHours;";
+
+            return Sql.SelectDataTable("Überwachte Kontakte", query, null);
+        }
+
 
         #region Hilfs-Methoden zu Kontakten
 
@@ -147,6 +171,27 @@ namespace MelBoxSql
                 return false;
         }
 
+        public static string HtmlOptionContacts(int accesslevel, int contactId, bool isAdmin)
+        {
+            System.Data.DataTable dt = Tab_Contact.SelectContactList(accesslevel, isAdmin ? 0 : contactId, ">=");
+            //  Id, Name, Firma, Ort
+
+            string options = string.Empty;
+            for (int i = 0; i < dt.Rows.Count; i++)
+            {
+                //<option value="2">Option 2</option>
+
+                int id = int.Parse(dt.Rows[i][0].ToString());
+                string name = dt.Rows[i][1].ToString();
+                string selected = (id == contactId) ? "selected" : string.Empty;
+
+                if (isAdmin || id == contactId)
+                    options += $"<option value='{id}' {selected}>{name}</option>" + Environment.NewLine;
+            }
+
+            return options;
+        }
+
         #endregion
 
         /// <summary>
@@ -159,13 +204,13 @@ namespace MelBoxSql
         {
             string encryped_pw = Encrypt(password);
 
-            Contact contact1 = new Contact()
-            {
-                Name = name,
-                Password = encryped_pw
-            };
+            string query = "SELECT Id FROM " + TableName + " WHERE Name = @Name AND Password = @Password AND Accesslevel > 0;";
 
-            System.Data.DataTable dt = Select(contact1);
+            Dictionary<string, object> valuePairs = new Dictionary<string, object>();
+            valuePairs.Add("@Name", name);
+            valuePairs.Add("@Password", encryped_pw);
+                
+            System.Data.DataTable dt = Sql.SelectDataTable("Kontakt", query, valuePairs);
 
             int.TryParse(Sql.GetFirstEntry(dt, nameof(Contact.Id)), out int result);
 
@@ -191,7 +236,15 @@ namespace MelBoxSql
 
         public int Id { get; set; }
 
-        public System.DateTime EntryTime { get; set; } = DateTime.MinValue;
+        private System.DateTime _EntryTime = DateTime.MinValue;
+        public System.DateTime EntryTime 
+        { 
+            get
+            {return _EntryTime;} 
+            
+            set
+            { _EntryTime = value; }
+        } 
 
         public string Name { get; set; } = null;
 

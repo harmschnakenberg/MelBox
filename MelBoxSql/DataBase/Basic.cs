@@ -93,14 +93,14 @@ namespace MelBoxSql
 
                     var command = connection.CreateCommand();
                     command.CommandText = query;
-                    //Console.WriteLine(command.CommandText); //TEST
+                    Console.WriteLine(command.CommandText); //TEST
 
                     if (args != null && args.Count > 0)
                     {
                         foreach (string key in args.Keys)
                         {
                             command.Parameters.AddWithValue(key, args[key]);
-                            //Console.WriteLine(key + "\t"+ args[key]); //TEST
+                            Console.WriteLine(key + "\t"+ args[key]); //TEST
                         }
                     }
                                        
@@ -116,6 +116,11 @@ namespace MelBoxSql
 #pragma warning disable CA1031 // Do not catch general exception types
                     catch
                     {
+                        myTable = new DataTable
+                        {
+                            TableName = tableName
+                        };
+
                         //Wenn Schema aus DB nicht eingehalten wird (z.B. UNIQUE Constrain in SELECT Abfragen); dann neue DataTable, alle Spalten <string>
                         using (var reader = command.ExecuteReader())
                         {

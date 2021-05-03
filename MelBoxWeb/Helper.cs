@@ -53,7 +53,7 @@ namespace MelBoxWeb
 #endif
             Dictionary<string, string> pairs = new Dictionary<string, string>();
             pairs.Add("##Titel##", titel);
-            pairs.Add("##Id##", guid);
+            pairs.Add("##Id##", guid != null ? string.Empty : "Gastzugang");
             pairs.Add("##Inhalt##", body);
 
             string html = Server.Page(Server.Html_Skeleton, pairs);
@@ -70,7 +70,7 @@ namespace MelBoxWeb
         {
             System.IO.Stream body = context.Request.InputStream;
             System.IO.StreamReader reader = new System.IO.StreamReader(body);
-
+                      
             string[] pairs = reader.ReadToEnd().Split('&');
 
             Dictionary<string, string> payload = new Dictionary<string, string>();
@@ -78,10 +78,19 @@ namespace MelBoxWeb
             foreach (var pair in pairs)
             {
                 string[] item = pair.Split('=');
-                payload.Add(item[0], item[1]);
+
+                if (item.Length > 1)             
+                    payload.Add(item[0], WebUtility.UrlDecode(item[1]));                                
             }
 
             return payload;
+        }
+
+        private static string HtmlDecode(string encoded)
+        {
+            //Ändert z.B. &lt; in <        
+            //return WebUtility.HtmlDecode(encoded);
+            return WebUtility.UrlDecode(encoded);
         }
 
         internal static string CheckCredentials(string name, string password)
@@ -107,7 +116,9 @@ namespace MelBoxWeb
 
                 string guid = Guid.NewGuid().ToString("N");
 
-                LogedInHash.Add(guid, id);
+                MelBoxSql.Contact user = MelBoxSql.Tab_Contact.SelectContact(id); 
+
+                LogedInHash.Add(guid, user);
 
                 return guid;
             }

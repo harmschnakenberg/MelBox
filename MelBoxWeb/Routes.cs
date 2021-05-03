@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using MelBoxSql;
+using System.Data;
 
 namespace MelBoxWeb
 {
@@ -17,7 +18,7 @@ namespace MelBoxWeb
             await context.Response.SendResponseAsync("Successfully hit the test route!").ConfigureAwait(false);
         }
 
-        
+        #region Nachrichten
         [RestRoute("Get", "/in")]
         public async Task InBox(IHttpContext context)
         {
@@ -25,13 +26,250 @@ namespace MelBoxWeb
 
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
-            System.Data.DataTable rec = MelBoxSql.Sql.Recieved_View(DateTime.UtcNow.AddDays(-14), DateTime.UtcNow);
+            //System.Data.DataTable rec = MelBoxSql.Sql.Recieved_View(DateTime.UtcNow.AddDays(-14), DateTime.UtcNow);
+            System.Data.DataTable rec = MelBoxSql.Sql.Recieved_View(1000);
             string table = Html.FromTable(rec, guid != null, "blocked");
 
             await Server.PageAsync(context, "Eingang", table);
         }
 
+        [RestRoute("Get", "/out")]
+        public async Task OutBox(IHttpContext context)
+        {
+            //System.Data.DataTable sent = MelBoxSql.Sql.Sent_View(DateTime.UtcNow.AddDays(-14), DateTime.UtcNow);
+            System.Data.DataTable sent = MelBoxSql.Sql.Sent_View(1000);
+            string table = Html.FromTable(sent);
 
+            await Server.PageAsync(context, "Ausgang", table);
+        }
+
+        [RestRoute("Get", "/overdue")]
+        public async Task OverdueShow(IHttpContext context)
+        {
+            System.Data.DataTable overdue = MelBoxSql.Sql.Overdue_View();
+
+            string html;
+            if (overdue.Rows.Count == 0)
+            {
+                html = Html.Alert(3, "Keine Zeitüberschreitung", "Kein überwachter Sender ist überfällig.");
+                DataTable dt = MelBoxSql.Tab_Contact.SelectWatchedContactList();
+                html += Html.FromTable(dt);
+            }
+            else
+            {
+                html = Html.FromTable(overdue);
+            }
+
+            await Server.PageAsync(context, "Überfällige Rückmeldungen", html);
+        }
+        #endregion
+
+        #region Bereitschaftszeiten
+        [RestRoute("Get", "/shift")]
+        public async Task ShiftShow(IHttpContext context)
+        {
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+            bool isAdmin = false;
+
+            if (Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                isAdmin = user.Accesslevel >= Server.Level_Admin;
+            }
+
+            DataTable dt = Sql.Shift_View();
+            string table = Html.FromShiftTable(dt, user);
+
+            await Server.PageAsync(context, "Bereitschaftsdienste", table);
+        }
+
+        [RestRoute("Get", "/shift/{shiftId:num}")]
+        public async Task ShiftFromId(IHttpContext context)
+        {
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+            bool isAdmin = false;
+
+            if (Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                isAdmin = user.Accesslevel >= Server.Level_Admin;
+            }
+
+            var shiftIdStr = context.Request.PathParameters["shiftId"];
+            int.TryParse(shiftIdStr, out int shiftId);
+
+            Shift shift = Tab_Shift.Select(shiftId);
+
+            string contactOptions = Tab_Contact.HtmlOptionContacts(Server.Level_Reciever, user.Id, isAdmin);
+
+            Dictionary<string, string> pairs = new Dictionary<string, string>();
+            pairs.Add("##Id##", shift.Id.ToString());
+            pairs.Add("##ContactOptions##", contactOptions);
+            pairs.Add("##MinDate##", DateTime.UtcNow.Date.ToString("yyyy-MM-dd"));
+            pairs.Add("##StartDate##", shift.Start.ToString("yyyy-MM-dd"));
+            pairs.Add("##EndDate##", shift.End.ToString("yyyy-MM-dd"));
+            pairs.Add("##StartOptions##", Tab_Shift.HtmlOptionHour(shift.Start.Hour));
+            pairs.Add("##EndOptions##", Tab_Shift.HtmlOptionHour(shift.End.Hour));
+            pairs.Add("##Route##", "update");
+
+            string form = Server.Page(Server.Html_FormShift, pairs);
+
+            DataTable dt = Sql.Shift_View();
+            string table = Html.FromShiftTable(dt, user);
+
+            await Server.PageAsync(context, "Bereitschaftsdienst", table + form);
+        }
+
+        [RestRoute("Get", "/shift/{shiftDate}")]
+        public async Task ShiftFromDate(IHttpContext context)
+        {
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+            bool isAdmin = false;
+
+            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+
+            isAdmin = user.Accesslevel >= Server.Level_Admin;
+
+            var shiftDateStr = context.Request.PathParameters["shiftDate"];
+            DateTime.TryParse(shiftDateStr, out DateTime shiftDate);
+
+            Shift shift = new Shift(user.Id, shiftDate);
+
+            string contactOptions = Tab_Contact.HtmlOptionContacts(Server.Level_Reciever, user.Id, isAdmin);
+
+            DateTime endDate = shiftDate.DayOfWeek == DayOfWeek.Monday ? shiftDate.Date.AddDays(7) : shiftDate.Date.AddDays(1);
+
+            Dictionary<string, string> pairs = new Dictionary<string, string>();
+            //pairs.Add("##readonly##", isAdmin ? string.Empty : "readonly");
+            //pairs.Add("##disabled##", isAdmin ? string.Empty : "disabled");
+            pairs.Add("##Id##", string.Empty);
+            // pairs.Add("##ContactId##", contact.Id.ToString());
+            //pairs.Add("##Name##", contact.Name);
+            pairs.Add("##ContactOptions##", contactOptions);
+            pairs.Add("##MinDate##", DateTime.UtcNow.Date.ToString("yyyy-MM-dd"));
+            pairs.Add("##StartDate##", shiftDate.Date.ToString("yyyy-MM-dd"));
+            pairs.Add("##EndDate##", endDate.ToString("yyyy-MM-dd"));
+            pairs.Add("##StartOptions##", Tab_Shift.HtmlOptionHour(shift.Start.Hour));
+            pairs.Add("##EndOptions##", Tab_Shift.HtmlOptionHour(shift.End.Hour));
+            pairs.Add("##Route##", "new");
+
+            string form = Server.Page(Server.Html_FormShift, pairs);
+
+            DataTable dt = Sql.Shift_View();
+            string table = Html.FromShiftTable(dt, user);
+
+            await Server.PageAsync(context, "Bereitschaftsdienst", table + form);
+        }
+
+        [RestRoute("Post", "/shift/new")]
+        public async Task ShiftCreate(IHttpContext context)
+        {
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+
+            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+
+            #region Form auslesen
+            Dictionary<string, string> payload = Server.Payload(context);
+            payload.TryGetValue("ContactId", out string contactIdStr);
+            payload.TryGetValue("StartDate", out string startDateStr);
+            payload.TryGetValue("EndDate", out string endDateStr);
+            payload.TryGetValue("StartTime", out string startTimeStr);
+            payload.TryGetValue("EndTime", out string endTimeStr);
+
+            DateTime start = DateTime.UtcNow;
+            DateTime end = DateTime.UtcNow.AddDays(1);
+
+            if (!int.TryParse(contactIdStr, out int shiftContactId))
+                shiftContactId = user.Id;
+
+            if (DateTime.TryParse(startDateStr, out DateTime startDate))
+                if (int.TryParse(startTimeStr, out int startHour))
+                    start = startDate.Date.AddHours(startHour); //Lokale Zeit!
+
+            if (DateTime.TryParse(endDateStr, out DateTime endDate))
+                if (int.TryParse(endTimeStr, out int endHour))
+                    end = endDate.Date.AddHours(endHour); //Lokale Zeit!          
+            #endregion
+
+            bool success = MelBoxSql.Tab_Shift.Insert(shiftContactId, start, end);
+            string alert;
+
+            if (success)
+                alert = Html.Alert(3, "Neue Bereitschaft gespeichert", $"Neue Bereitschaft vom {start.ToShortDateString()} bis {end.ToShortDateString()} wurde erfolgreich erstellt.");
+            else
+                alert = Html.Alert(1, "Fehler beim speichern der Bereitschaft", "Die Bereitschaft konnte nicht in der Datenbank gespeichert werden.");
+
+            DataTable dt = Sql.Shift_View();
+            string table = Html.FromShiftTable(dt, user);
+
+            await Server.PageAsync(context, "Bereitschaftszeit erstellen", alert + table);
+        }
+
+        [RestRoute("Post", "/shift/update")]
+        public async Task ShiftUpdate(IHttpContext context)
+        {
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+
+            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+
+            #region Form auslesen
+            Dictionary<string, string> payload = Server.Payload(context);
+            payload.TryGetValue("Id", out string shiftIdStr);
+            payload.TryGetValue("ContactId", out string contactIdStr);
+            payload.TryGetValue("StartDate", out string startDateStr);
+            payload.TryGetValue("EndDate", out string endDateStr);
+            payload.TryGetValue("StartTime", out string startTimeStr);
+            payload.TryGetValue("EndTime", out string endTimeStr);
+
+            DateTime start = DateTime.UtcNow;
+            DateTime end = DateTime.UtcNow.AddDays(1);
+
+            int.TryParse(shiftIdStr, out int shiftId);
+
+            if (!int.TryParse(contactIdStr, out int shiftContactId))
+                shiftContactId = user.Id;
+
+            if (DateTime.TryParse(startDateStr, out DateTime startDate))
+                if (int.TryParse(startTimeStr, out int startHour))
+                    start = startDate.Date.AddHours(startHour); //Lokale Zeit!
+
+            if (DateTime.TryParse(endDateStr, out DateTime endDate))
+                if (int.TryParse(endTimeStr, out int endHour))
+                    end = endDate.Date.AddHours(endHour); //Lokale Zeit!          
+            #endregion
+
+            Shift set = new Shift(shiftContactId, start.ToUniversalTime(), end.ToUniversalTime());
+            Shift where = new Shift() { Id = shiftId };
+
+            bool success = MelBoxSql.Tab_Shift.Update(set, where);
+            string alert;
+
+            if (success)
+                alert = Html.Alert(3, "Bereitschaft geändert", $"Die Bereitschaft Nr. {shiftId} von {start.ToShortDateString()} bis {end.ToShortDateString()}  wurde erfolgreich geändert.");
+            else
+                alert = Html.Alert(1, "Fehler beim Ändern der Bereitschaft", "Die Bereitschaft konnte nicht in der Datenbank gespeichert werden.");
+
+            DataTable dt = Sql.Shift_View();
+            string table = Html.FromShiftTable(dt, user);
+
+            await Server.PageAsync(context, "Bereitschaftszeit geändert", alert + table);
+        }
+
+
+        #endregion
+
+
+        #region Gesperrte Nachrichten
         [RestRoute("Get", "/blocked/{recId:num}")]
         public async Task InBoxBlock(IHttpContext context)
         {
@@ -87,7 +325,7 @@ namespace MelBoxWeb
             System.Data.DataTable blocked = MelBoxSql.Sql.Blocked_View();
             string table = Html.FromTable(blocked, guid != null, "blocked");
 
-            await Server.PageAsync(context, "Eingang", table);
+            await Server.PageAsync(context, "Gesperrte Nachrichten", table);
         }
 
 
@@ -127,8 +365,8 @@ namespace MelBoxWeb
             set.EndBlockHour = endHour;
 
             string alert;
-            if (!Tab_Message.Update(set, id))            
-                alert = Html.Alert(1, "Nachricht aktualisieren fehlgeschlagen", $"Die Nachricht {idStr} konnte nicht geändert werden.");            
+            if (!Tab_Message.Update(set, id))
+                alert = Html.Alert(1, "Nachricht aktualisieren fehlgeschlagen", $"Die Nachricht {idStr} konnte nicht geändert werden.");
             else
                 alert = Html.Alert(2, "Nachricht aktualisiert", $"Änderungen für die Nachricht {idStr} gespeichert.");
 
@@ -137,59 +375,437 @@ namespace MelBoxWeb
 
             await Server.PageAsync(context, "Nachricht aktualisiert", alert + table);
         }
+        #endregion
 
 
-        [RestRoute("Get", "/out")]
-        public async Task OutBox(IHttpContext context)
-        {           
-            System.Data.DataTable sent = MelBoxSql.Sql.Sent_View(DateTime.UtcNow.AddDays(-14), DateTime.UtcNow);
-            string table = Html.FromTable(sent);
-
-            await Server.PageAsync(context, "Ausgang", table);
-        }
-
-
+        #region Benutzerkonto
         [RestRoute("Get", "/account")]
-        public async Task Account(IHttpContext context)
+        [RestRoute("Get", "/account/{id:num}")]
+        public async Task AccountShow(IHttpContext context)
         {
+            #region Anfragenden Benutzer identifizieren
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
-            if (!Server.LogedInHash.TryGetValue(guid, out int contactId))
+            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
             {
                 await Home(context);
                 return;
             }
 
-            Contact contact = MelBoxSql.Tab_Contact.SelectContact(contactId);
-            Company company = MelBoxSql.Tab_Company.SelectCompany(contact.CompanyId);
-    
+            bool isAdmin = user.Accesslevel >= Server.Level_Admin;
+            DataTable dt = Tab_Contact.SelectContactList(user.Accesslevel, isAdmin ? 0 : user.Id);
+            #endregion
+
+            #region Anzuzeigenden Benutzer 
+            int showId = user.Id;
+
+            if (context.Request.PathParameters.TryGetValue("id", out string idStr))
+            {
+                int.TryParse(idStr, out showId);
+            }
+
+            Contact account = MelBoxSql.Tab_Contact.SelectContact(showId);
+            Company company = MelBoxSql.Tab_Company.SelectCompany(account.CompanyId);
+            #endregion
+
             Dictionary<string, string> pairs = new Dictionary<string, string>();
-            pairs.Add("##Id##", contact.Id.ToString());
-            pairs.Add("##Name##", contact.Name);
-            pairs.Add("##Accesslevel##", contact.Accesslevel.ToString());
-            pairs.Add("##CompanyId##", contact.Accesslevel.ToString());
+            pairs.Add("##readonly##", isAdmin ? string.Empty : "readonly");
+            pairs.Add("##disabled##", isAdmin ? string.Empty : "disabled");
+            pairs.Add("##Id##", account.Id.ToString());
+            pairs.Add("##Name##", account.Name);
+            pairs.Add("##Accesslevel##", account.Accesslevel.ToString());
+            pairs.Add("##UserAccesslevel##", user.Accesslevel.ToString());
+            pairs.Add("##CompanyId##", account.CompanyId.ToString());
             pairs.Add("##CompanyName##", company.Name);
-            pairs.Add("##viaEmail##", contact.Via.HasFlag(Tab_Contact.Communication.Email) ? "checked" : string.Empty);
-            pairs.Add("##CEmail##", contact.Email);
+            pairs.Add("##CompanyCity##", System.Text.RegularExpressions.Regex.Replace(company.City, @"\d", ""));
+            pairs.Add("##viaEmail##", account.Via.HasFlag(Tab_Contact.Communication.Email) ? "checked" : string.Empty);
+            pairs.Add("##Email##", account.Email);
+            pairs.Add("##viaPhone##", account.Via.HasFlag(Tab_Contact.Communication.Sms) ? "checked" : string.Empty);
+            pairs.Add("##Phone##", "+" + account.Phone.ToString());
+            pairs.Add("##MaxInactiveHours##", account.MaxInactiveHours.ToString());
+            pairs.Add("##KeyWord##", account.KeyWord);
+            pairs.Add("##CompanyList##", isAdmin ? Tab_Company.SelectCompanyAllToHtmlOption(account.CompanyId) : string.Empty);
+
+            pairs.Add("##NewContact##", isAdmin ? Html.ButtonNew("account") : string.Empty);
 
             string form = Server.Page(Server.Html_FormAccount, pairs);
+            string tabel = Html.FromTable(dt, true, "account");
 
-            await Server.PageAsync(context, "Benutzerkonto", form);
+            await Server.PageAsync(context, "Benutzerkonto", tabel + form);
         }
 
+        [RestRoute("Post", "/account/new")]
+        public async Task AccountCreate(IHttpContext context)
+        {
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
+            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+
+            #region Form auslesen
+            Dictionary<string, string> payload = Server.Payload(context);
+            //payload.TryGetValue("Id",out string idStr); //Wird automatisch vergeben
+            payload.TryGetValue("name", out string name);
+            payload.TryGetValue("password", out string password);
+            payload.TryGetValue("CompanyId", out string CompanyIdStr);
+            payload.TryGetValue("viaEmail", out string viaEmail);
+            payload.TryGetValue("email", out string email);
+            payload.TryGetValue("viaPhone", out string viaPhone);
+            payload.TryGetValue("phone", out string phoneStr);
+            //KeyWord nicht vergebbar
+            payload.TryGetValue("MaxInactiveHours", out string maxInactiveHoursStr);
+            payload.TryGetValue("Accesslevel", out string accesslevelStr);
+            #endregion
+
+            #region Kontakt erstellen
+            Contact contact = new Contact();
+            contact.Name = name;
+            contact.EntryTime = DateTime.UtcNow;
+            contact.Password = Tab_Contact.Encrypt(password);
+            contact.Email = email;
+
+            if (int.TryParse(CompanyIdStr, out int companyId))
+            {
+                contact.CompanyId = companyId;
+            }
+
+            if (int.TryParse(maxInactiveHoursStr, out int maxInactiveHours))
+            {
+                contact.MaxInactiveHours = maxInactiveHours;
+            }
+
+            if (int.TryParse(accesslevelStr, out int accesslevel))
+            {
+                contact.Accesslevel = accesslevel;
+            }
+
+            if (ulong.TryParse(phoneStr, out ulong phone))
+            {
+                contact.Phone = phone;
+            }
+
+            contact.Via = Tab_Contact.Communication.Unknown;
+
+            if (viaEmail != null) contact.Via |= Tab_Contact.Communication.Email;
+            if (viaPhone != null) contact.Via |= Tab_Contact.Communication.Sms;
+            #endregion
+
+            bool success = MelBoxSql.Tab_Contact.Insert(contact);
+            string alert;
+
+            if (success)
+                alert = Html.Alert(3, "Neuen Kontakt gespeichert", "Der Kontakt " + name + " wurde erfolgreich neu erstellt.");
+            else
+                alert = Html.Alert(1, "Fehler beim speichern des Kontakts", "Der Kontakt " + name + " konnte nicht in der Datenbank gespeichert werden.");
+
+            await Server.PageAsync(context, "Benutzerkonto erstellen", alert);
+        }
+
+        [RestRoute("Post", "/account/update")]
+        public async Task AccountUpdate(IHttpContext context)
+        {
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+
+            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+
+            #region Form auslesen
+            Dictionary<string, string> payload = Server.Payload(context);
+            payload.TryGetValue("Id", out string idStr);
+            payload.TryGetValue("name", out string name);
+            payload.TryGetValue("password", out string password);
+            payload.TryGetValue("CompanyId", out string CompanyIdStr);
+            payload.TryGetValue("viaEmail", out string viaEmail);
+            payload.TryGetValue("email", out string email);
+            payload.TryGetValue("viaPhone", out string viaPhone);
+            payload.TryGetValue("phone", out string phoneStr);
+            //KeyWord nicht vergebbar
+            payload.TryGetValue("MaxInactiveHours", out string maxInactiveHoursStr);
+            payload.TryGetValue("Accesslevel", out string accesslevelStr);
+            #endregion
+
+            #region Kontakt erstellen
+            Contact where = new Contact();
+
+            if (int.TryParse(idStr, out int Id))
+            {
+                where.Id = Id;
+            }
+
+            Contact set = new Contact();
+
+            set.Name = name;
+            set.EntryTime = DateTime.UtcNow;
+
+            if (password.Length > 0)
+            {
+                set.Password = Tab_Contact.Encrypt(password);
+            }
+
+            set.Email = email;
+
+
+            if (int.TryParse(CompanyIdStr, out int companyId))
+            {
+                set.CompanyId = companyId;
+            }
+
+            if (int.TryParse(maxInactiveHoursStr, out int maxInactiveHours))
+            {
+                set.MaxInactiveHours = maxInactiveHours;
+            }
+
+            if (int.TryParse(accesslevelStr, out int accesslevel))
+            {
+                //kann maximal eigenen Access-Level vergeben.
+                if (accesslevel > user.Accesslevel)
+                    accesslevel = user.Accesslevel;
+
+                set.Accesslevel = accesslevel;
+            }
+
+            if (ulong.TryParse(phoneStr, out ulong phone))
+            {
+                set.Phone = phone;
+            }
+
+            set.Via = Tab_Contact.Communication.Unknown;
+
+            if (viaEmail != null) set.Via |= Tab_Contact.Communication.Email;
+            if (viaPhone != null) set.Via |= Tab_Contact.Communication.Sms;
+            #endregion
+
+            bool success = Id < 1 ? false : MelBoxSql.Tab_Contact.Update(set, where);
+
+            string alert;
+
+            if (success)
+                alert = Html.Alert(3, "Kontakt gespeichert", "Der Kontakt [" + Id + "] " + name + " wurde erfolgreich geändert.");
+            else
+                alert = Html.Alert(1, "Fehler beim speichern des Kontakts", "Der Kontakt [" + Id + "] " + name + " konnte in der Datenbank nicht geändert werden.");
+
+            await Server.PageAsync(context, "Benutzerkonto ändern", alert);
+        }
+        #endregion
+
+
+        #region Firmeninformation
+        [RestRoute("Get", "/company/{id:num}")]
+        public async Task CompanyShow(IHttpContext context)
+        {
+            #region Anfragenden Firma identifizieren
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+
+            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+
+            bool isAdmin = user.Accesslevel >= Server.Level_Admin;
+            int showId = 0;
+
+            if (context.Request.PathParameters.TryGetValue("id", out string idStr))
+            {
+                int.TryParse(idStr, out showId);
+            }
+
+            Company company = MelBoxSql.Tab_Company.SelectCompany(showId);
+            #endregion
+
+            Dictionary<string, string> pairs = new Dictionary<string, string>();
+            pairs.Add("##readonly##", isAdmin ? string.Empty : "readonly");
+            pairs.Add("##disabled##", isAdmin ? string.Empty : "disabled");
+            pairs.Add("##Id##", company.Id.ToString());
+            pairs.Add("##Name##", company.Name);
+            pairs.Add("##Address##", company.Address);
+            pairs.Add("##City##", company.City);
+
+            pairs.Add("##NewCompany##", isAdmin ? Html.ButtonNew("company") : string.Empty);
+
+            string form = Server.Page(Server.Html_FormCompany, pairs);
+
+            DataTable dt = Tab_Company.SelectCompanyAll(isAdmin ? 0 : company.Id);
+            string table = Html.FromTable(dt, true, "company");
+
+            await Server.PageAsync(context, "Firmeninformation", table + form);
+        }
+
+        [RestRoute("Post", "/company/new")]
+        public async Task CompanyCreate(IHttpContext context)
+        {
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+
+            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+
+            #region Form auslesen
+            Dictionary<string, string> payload = Server.Payload(context);
+            //payload.TryGetValue("id", out string idStr);
+            payload.TryGetValue("name", out string name);
+            payload.TryGetValue("address", out string address);
+            payload.TryGetValue("city", out string city);
+
+            Company set = new Company();
+            set.Name = name;
+            set.Address = address;
+            set.City = city;
+            #endregion
+
+            bool success = MelBoxSql.Tab_Company.Insert(set);
+            string alert;
+
+            if (success)
+                alert = Html.Alert(3, "Neue Firmeninformation gespeichert", "Die Firmeninformation " + name + " wurde erfolgreich neu erstellt.");
+            else
+                alert = Html.Alert(1, "Fehler beim speichern der Firmeninformation", "Die Firmeninformation zu " + name + " konnte nicht in der Datenbank gespeichert werden.");
+
+            await Server.PageAsync(context, "Neue Firmeninformation erstellen", alert);
+        }
+
+        [RestRoute("Post", "/company/update")]
+        public async Task CompanyUpdate(IHttpContext context)
+        {
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+
+            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+
+            #region Form auslesen
+            Dictionary<string, string> payload = Server.Payload(context);
+            payload.TryGetValue("id", out string idStr);
+            payload.TryGetValue("name", out string name);
+            payload.TryGetValue("address", out string address);
+            payload.TryGetValue("city", out string city);
+            #endregion
+
+            Company where = new Company(0);
+
+            if (int.TryParse(idStr, out int Id))
+            {
+                where.Id = Id;
+            }
+
+            Company set = new Company();
+
+            set.Name = name;
+            set.Address = address;
+            set.City = city;
+
+            bool success = Id < 1 ? false : MelBoxSql.Tab_Company.Update(set, where);
+
+            string alert;
+
+            if (success)
+                alert = Html.Alert(3, "Firmeninformation gespeichert", "Die Firmeninformation [" + Id + "] " + name + " wurde erfolgreich geändert.");
+            else
+                alert = Html.Alert(1, "Fehler beim speichern der Firmeninformation", "Die Firmeninformation zu [" + Id + "] " + name + " konnte in der Datenbank nicht geändert werden.");
+
+            await Server.PageAsync(context, "Firmeninformation ändern", alert);
+        }
+        #endregion
+
+
+        #region Benutzerverwaltung
         [RestRoute("Post", "/register")]
         public async Task Register(IHttpContext context)
         {
             Dictionary<string, string> payload = Server.Payload(context);
-            string name = payload["name"];
-            string password = payload["password"];
-           
-            string form = $"<p class='w3-pink'>noch nicht implementiert</p><h2>{name}</h2><h3>{password}</h3>";
+            payload.TryGetValue("name", out string name);
+            //payload.TryGetValue("password", out string password); //Sicherheit!
+
+            Dictionary<string, string> pairs = new Dictionary<string, string>();
+            pairs.Add("##readonly##", "readonly");
+            pairs.Add("##disabled##", string.Empty);
+            pairs.Add("##Name##", name);
+            //pairs.Add("##Password##", password); // Kein Encrypt, da in neue Form eingefügt wird. Sicherheit?
+
+            pairs.Add("##CompanyList##", Tab_Company.SelectCompanyAllToHtmlOption());
+            pairs.Add("##NewContact##", Html.ButtonNew("account"));
+
+            string form = Server.Page(Server.Html_FormRegister, pairs);
 
             await Server.PageAsync(context, "Benutzerregistrierung", form);
         }
 
+        [RestRoute("Post", "/register/thanks")]
+        public async Task RegisterProcessing(IHttpContext context)
+        {
+            #region Form auslesen
+            Dictionary<string, string> payload = Server.Payload(context);
+            //payload.TryGetValue("Id",out string idStr); //Wird automatisch vergeben
+            payload.TryGetValue("name", out string name);
+            payload.TryGetValue("password", out string password);
+            payload.TryGetValue("CompanyId", out string CompanyIdStr);
+            payload.TryGetValue("viaEmail", out string viaEmail);
+            payload.TryGetValue("email", out string email);
+            payload.TryGetValue("viaPhone", out string viaPhone);
+            payload.TryGetValue("phone", out string phoneStr);
+            //KeyWord nicht vergebbar
+            //payload.TryGetValue("MaxInactiveHours", out string maxInactiveHoursStr);
+            //payload.TryGetValue("Accesslevel", out string accesslevelStr);
+            #endregion
+
+            #region Kontakt erstellen
+            Contact contact = new Contact();
+            contact.Name = name;
+
+            if (MelBoxSql.Tab_Contact.Select(contact).Rows.Count > 0)
+            {
+                string error = Html.Alert(1, "Registrierung fehlgeschlagen", $"Der Benutzername {name} ist bereits vergeben." + @"<a href='/' class='w3-bar-item w3-button w3-teal w3-margin'>Nochmal</a>");
+                await Server.PageAsync(context, "Benutzerregistrierung fehlgeschlagen", error);
+                return;
+            }
+
+            contact.EntryTime = DateTime.UtcNow;
+            contact.Password = Tab_Contact.Encrypt(password);
+            contact.Email = email;
+
+            if (int.TryParse(CompanyIdStr, out int companyId))
+            {
+                contact.CompanyId = companyId;
+            }
+
+            contact.MaxInactiveHours = 0;
+            contact.Accesslevel = 0;
+
+            if (ulong.TryParse(phoneStr, out ulong phone))
+            {
+                contact.Phone = phone;
+            }
+
+            contact.Via = Tab_Contact.Communication.Unknown;
+
+            if (viaEmail != null) contact.Via |= Tab_Contact.Communication.Email;
+            if (viaPhone != null) contact.Via |= Tab_Contact.Communication.Sms;
+            #endregion
+
+
+
+            bool success = MelBoxSql.Tab_Contact.Insert(contact);
+
+            string alert;
+
+            if (success)
+                alert = Html.Alert(3, "Erfolgreich registriert", "Willkommen " + name + "!<br/> Die Registrierung muss noch durch einen Administrator bestätigt werden, bevor Sie sich einloggen können. Informieren Sie einen Administrator.");
+            else
+                alert = Html.Alert(1, "Registrierung fehlgeschlagen", "Es ist ein Fehler bei der Registrierung aufgetreten. Wenden Sie sich an den Administrator.");
+
+
+            await Server.PageAsync(context, "Benutzerregistrierung", alert);
+        }
 
         [RestRoute("Post", "/login")]
         public async Task Login(IHttpContext context)
@@ -201,7 +817,7 @@ namespace MelBoxWeb
 
             int prio = 1;
             string titel = "Login fehlgeschlagen";
-            string text = "Benutzername und Passwort prüfen." + @"<a href='/' class='w3-bar-item w3-button w3-teal w3-margin'>Nochmal</a>"; ;
+            string text = "Benutzername und Passwort prüfen." + @"<a href='/' class='w3-bar-item w3-button w3-teal w3-margin'>Nochmal</a>";
 
             if (guid.Length > 0)
             {
@@ -218,7 +834,23 @@ namespace MelBoxWeb
 
             await Server.PageAsync(context, titel, alert);
         }
+        #endregion
 
+        [RestRoute("Get", "/log")]
+        public async Task LoggingShow(IHttpContext context)
+        {
+            string html = "<p class='w3-pink'> nicht implementiert </p>";
+
+            await Server.PageAsync(context, "Log", html);
+        }
+
+        [RestRoute("Get", "/gsm")]
+        public async Task ModemShow(IHttpContext context)
+        {
+            string html = "<p class='w3-pink'> nicht implementiert </p>";
+
+            await Server.PageAsync(context, "GSM-Modem", html);
+        }
 
         [RestRoute]
         public async Task Home(IHttpContext context)

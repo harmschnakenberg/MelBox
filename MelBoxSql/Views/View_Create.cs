@@ -24,18 +24,18 @@ namespace MelBoxSql
             NonQuery(query1);
 
             const string query2 = "CREATE VIEW " + Recieved_ViewName + " AS " +
-                                    "SELECT r.Id As Nr, RecTime AS Empfangen, c.Name AS Von, (SELECT Content FROM Message WHERE Id = r.ContentId) AS Inhalt " +
+                                    "SELECT r.Id As Nr, strftime('%Y-%m-%d %H:%M:%S', RecTime) AS Empfangen, c.Name AS Von, (SELECT Content FROM Message WHERE Id = r.ContentId) AS Inhalt " +
                                     "FROM Recieved AS r " +
                                     "JOIN Contact AS c " +
                                     "ON FromId = c.Id; ";
             Sql.NonQuery(query2);
 
-            const string query3 = "CREATE VIEW " + Sent_ViewName + " AS SELECT SentTime AS Gesendet, c.name AS An, Content AS Inhalt, Via AS Via, Confirmation AS Sendestatus " +
+            const string query3 = "CREATE VIEW " + Sent_ViewName + " AS SELECT strftime('%Y-%m-%d %H:%M:%S',SentTime) AS Gesendet, c.name AS An, Content AS Inhalt, Via AS Via, Confirmation AS Sendestatus " +
                                     "FROM Sent AS ls JOIN Contact AS c ON ToId = c.Id JOIN Message AS mc ON mc.id = ls.ContentId; ";
             Sql.NonQuery(query3);
 
             const string query4 = "CREATE VIEW " + Overdue_ViewName + " AS " +
-                                    "SELECT FromId AS Id, Contact.Name, Company.Name AS Firma, MaxInactiveHours || ' Std.' AS Max_Inaktiv, RecTime AS Letzte_Nachricht, Content AS Inhalt, " +
+                                    "SELECT FromId AS Id, Contact.Name, Company.Name AS Firma, MaxInactiveHours || ' Std.' AS Max_Inaktiv, strftime('%Y-%m-%d %H:%M:%S',RecTime) AS Letzte_Nachricht, Content AS Inhalt, " +
                                     "CAST( (strftime('%s', 'now') - strftime('%s', RecTime, '+' || MaxInactiveHours || ' hours')) / 3600 AS INTEGER) || ' Std.' AS Fällig_seit " +
                                     "FROM Recieved " +
                                     "JOIN Contact ON Contact.Id = Recieved.FromId " +
@@ -52,10 +52,10 @@ namespace MelBoxSql
             Sql.NonQuery(query5);
 
             const string query6 = "CREATE VIEW " + Shift_ViewName + " AS " +
-                                    "SELECT Shift.Id AS Nr, Contact.Id AS ContactId, Contact.Name AS Name, Via | 1 AS Sms, Via | 2 AS Email, CASE(CAST(strftime('%w', Start) AS INT) + 6) % 7 WHEN 0 THEN 'Mo' WHEN 1 THEN 'Di' WHEN 2 THEN 'Mi' WHEN 3 THEN 'Do' WHEN 4 THEN 'Fr' WHEN 5 THEN 'Sa' ELSE 'So' END AS Tag, date(Start) AS Datum, CAST(strftime('%H', Start, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H', End, 'localtime') AS INTEGER) AS Ende " +
+                                    "SELECT Shift.Id AS Nr, Contact.Id AS ContactId, Contact.Name AS Name, Via, CASE(CAST(strftime('%w', Start) AS INT) + 6) % 7 WHEN 0 THEN 'Mo' WHEN 1 THEN 'Di' WHEN 2 THEN 'Mi' WHEN 3 THEN 'Do' WHEN 4 THEN 'Fr' WHEN 5 THEN 'Sa' ELSE 'So' END AS Tag, date(Start) AS Datum, CAST(strftime('%H', Start, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H', End, 'localtime') AS INTEGER) AS Ende " +
                                     "FROM Shift JOIN Contact ON ContactId = Contact.Id WHERE Datum >= date('now', '-1 day') " +
                                     "UNION " +
-                                    "SELECT NULL AS Nr, NULL AS ContactId, NULL AS Name, 0 AS Sms, 0 AS Email, CASE(CAST(strftime('%w', d) AS INT) + 6) % 7 WHEN 0 THEN 'Mo' WHEN 1 THEN 'Di' WHEN 2 THEN 'Mi' WHEN 3 THEN 'Do' WHEN 4 THEN 'Fr' WHEN 5 THEN 'Sa' ELSE 'So' END AS Tag, d AS Datum, NULL AS Beginn, NULL AS Ende " +
+                                    "SELECT NULL AS Nr, NULL AS ContactId, NULL AS Name, 0 AS Via, CASE(CAST(strftime('%w', d) AS INT) + 6) % 7 WHEN 0 THEN 'Mo' WHEN 1 THEN 'Di' WHEN 2 THEN 'Mi' WHEN 3 THEN 'Do' WHEN 4 THEN 'Fr' WHEN 5 THEN 'Sa' ELSE 'So' END AS Tag, d AS Datum, NULL AS Beginn, NULL AS Ende " +
                                     "FROM ViewYearFromToday WHERE Datum >= date('now', '-1 day') " +
                                     "ORDER BY Datum; ";
             Sql.NonQuery(query6);

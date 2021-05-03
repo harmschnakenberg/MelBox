@@ -1,10 +1,10 @@
 ﻿<div id="id01" >
-    <div class="w3-modal-content w3-card-4 w3-animate-zoom" style="max-width:600px">
+    <div class="w3-modal-content w3-card-4 w3-display-middle" style="max-width:600px">
 
         <div class="w3-center">
             <br>
             <span onclick="document.getElementById('id01').style.display='none'" class="w3-button w3-xlarge w3-hover-red w3-display-topright" title="Close Modal">&times;</span>
-            <i class='w3-circle w3-margin-top w3-xxlarge material-icons-outlined'>assignment_ind</i>
+            <i class='w3-circle w3-margin-top w3-jumbo material-icons-outlined'>assignment_ind</i>
         </div>
 
         <form class="w3-container" action="/account/update" method="post">
@@ -15,44 +15,72 @@
                 <input name="name" type="text" class="w3-input w3-border w3-margin-bottom" placeholder="Benutzernamen eingeben" value="##Name##">
 
                 <label><b>Password</b></label>
-                <input class="w3-input w3-border w3-margin-bottom" type="password" placeholder="Passwort" name="password">
+                <div class="w3-row">
+                    <div class="w3-col w3-right" style="width:100px">
+                        <input name="Accesslevel" type="number" class="w3-input w3-border" value="##Accesslevel##" max="##UserAccesslevel##"  ##readonly## />
+                    </div>
+                    <div class="w3-rest">
+                        <input class="w3-input w3-border w3-margin-bottom" type="password" placeholder="Passwort" name="password">
+                    </div>
+                </div>
 
-                <input name="Accesslevel" type="hidden" value="##Accesslevel##" />
-
-                <input name="CompanyId" type="number" value="##CompanyId##" readonly />
-                <div class="w3-card  w3-margin-bottom">
-                    <h3>Firma</h3>
-                    <select class="w3-select w3-border " name="option">
-                        <option value="##CompanyId##" selected>##CompanyName##</option>
-                        <!--
-                            <option value="2">Option 2</option>
-                            <option value="3">Option 3</option>-->
-                        -->
-                        ##CompanyList##
-                    </select>
+                <label><b>Firma</b></label>
+                <div class="w3-row">
+                    <div class="w3-col w3-right w3-margin-left w3-margin-right" style="width:30px">
+                        <a href='/company/##CompanyId##'><i class='material-icons-outlined w3-xxlarge'>build</i></a>
+                    </div>
+                    <div class="w3-rest w3-margin-bottom">
+                        <select class="w3-select w3-border " name="CompanyId" ##disabled##>
+                            <option value="##CompanyId##" selected>##CompanyName##, ##CompanyCity##</option>
+                            <!--<option value="2">Option 2</option>
+                    <option value="3">Option 3</option>-->
+                            ##CompanyList##
+                        </select>
+                    </div>
                 </div>
 
                 <label><b>Email</b></label>
-                <input name="viaEmail" type="checkbox" class="w3-check" value="##viaEmail##" />
-                <input name="email" type="email" class="w3-input w3-border w3-margin-bottom" placeholder="Emailadresse" value="##Email##" pattern="[^@\s]+@[^@\s]+">
+                <div class="w3-row">
+                    <div class="w3-col" style="width:40px">
+                        <input name="viaEmail" type="checkbox" class="w3-check" value="##viaEmail##">
+                    </div>
+                    <div class="w3-rest">
+                        <input name="email" type="email" class="w3-input w3-border w3-margin-bottom" placeholder="Emailadresse" value="##Email##" pattern="[^@\s]+@[^@\s]+">
+                    </div>
+                </div>
 
                 <label><b>Mobiltelefon</b></label>
-                <input name="viaPhone" type="checkbox" class="w3-check" value="##viaPhone##" />
-                <input name="phone" type="tel" placeholder="+49-421-123456789" pattern="\+[0-9]+-[0-9]+-[0-9]+">
+                <div class="w3-row">
+                    <div class="w3-col" style="width:40px">
+                        <input name="viaPhone" type="checkbox" class="w3-check" value="##viaPhone##" />
+                    </div>
+                    <div class="w3-rest">
+                        <input name="phone" type="tel" class="w3-input w3-border w3-margin-bottom" placeholder="+49-421-123456789" pattern="\+[0-9,\s]+" value="##Phone##">
+                    </div>
+                </div>
 
-                <input name="KeyWord" type="text" value="##KeyWord##" readonly />
+                <label><b>Schlüsselwort</b></label>
+                <input name="KeyWord" type="text" class="w3-input w3-border w3-margin-bottom" placeholder="-leer-" value="##KeyWord##" readonly />
 
                 <label><b>Maximale Zeit zwischen Meldungen</b></label>
-                <input name="MaxInactiveHours" type="number" value="##MaxInactiveHours##" /> Stunden
+                <div class="w3-row">
+                    <div class="w3-col" style="width:75px">
+                        <input name="MaxInactiveHours" type="number" class="w3-input w3-border" value="##MaxInactiveHours##" ##disabled## />
+                    </div>
+                    <div class="w3-rest w3-container w3-panel">Stunden</div>
+                </div>
 
-                <button class="w3-button w3-block w3-teal w3-section w3-padding" type="submit">Speichern</button>
-                <input class="w3-check w3-margin-top" type="checkbox" checked="checked"> Remember me
+                <div class="w3-row">
+                    <button onclick="document.getElementById('id01').style.display='none'" type="button" class="w3-button w3-block w3-red w3-section w3-padding w3-col w3-quarter w3-margin-right">Verwerfen</button>
+                    ##NewContact##
+                    <button class="w3-button w3-block w3-teal w3-section w3-padding w3-col w3-quarter w3-margin-left  w3-right" type="submit">Speichern</button>
+                </div>
             </div>
         </form>
 
-        <div class="w3-container w3-border-top w3-padding-16 w3-light-grey">
+        <!--<div class="w3-container w3-border-top w3-padding-16 w3-light-grey">
             <button onclick="document.getElementById('id01').style.display='none'" type="button" class="w3-button w3-red">Cancel</button>            
-        </div>
+        </div>-->
 
     </div>
 </div>

@@ -108,6 +108,6 @@ namespace MelBoxSql
 
         public int Reference { get; set; }
 
-        public int Confirmation { get; set; }
+        public int Confirmation { get; set; } = -1;
     }
 }
