@@ -1,0 +1,70 @@
+﻿
+<script>
+    var myVar = setInterval(myTimer, 30000);
+
+    function myTimer() {
+        getQuality("/gsm/quality");
+    }
+
+    getQuality("/gsm/quality"); //Beim Laden einmal ausführen
+
+    async function getQuality(url) {
+        fetch(url)
+            .then((response) => {
+                return response.json()
+            })
+            .then((data) => {
+                // Work with JSON data here
+                var div1 = document.getElementById("quality");
+                div1.innerHTML = data.SignalQuality + '%';
+                div1.style.width = data.SignalQuality + '%';      
+
+                var div2 = document.getElementById("registered");
+                div2.innerHTML = data.NetworkRegistration;
+
+                //var text = "";
+                //var x;
+                //for (x in data) {
+                //    text += data[x] + '|';
+                //}
+                //document.getElementById("test").innerHTML = text;                
+            })
+            .catch((err) => {
+                // Do something for an error here
+                alert(err);
+            })
+    }
+</script>
+
+<div class="w3-container">
+    <h2>Status</h2>
+    <p>Informationen zum angeschlossenen Modem:</p>
+    <ul class="w3-ul w3-card" style="width:50%">
+        <li>
+            <label>Signal</label>
+            <div class="w3-light-grey w3-round-xlarge" onclick='getQuality("/gsm/quality");'>
+                <div class="w3-container w3-blue w3-round-xlarge" id="quality" style="width:0%">-1%</div>
+            </div>
+        </li>
+        <li>
+            <label>Registrierung</label>
+            <div id="registered" class="w3-light-grey">
+                ##Registered##
+            </div>
+        </li>
+        <li>
+            <label>Eigene Nummer</label>
+            <div class="w3-light-grey">
+                ##OwnName## ##OwnNumber##
+            </div>
+        </li>
+        <li>
+            <label>SMS-Servicecenter</label>
+            <div class="w3-light-grey">
+                ##ProviderName##: ##ServiceCenter##
+            </div>
+        </li>
+    </ul>
+    <br>
+
+</div>

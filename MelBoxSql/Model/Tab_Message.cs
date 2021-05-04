@@ -76,8 +76,10 @@ namespace MelBoxSql
 
         public static bool Update(Message set, int whereId)
         {
-            Dictionary<string, object> dict = new Dictionary<string, object>();
-            dict.Add(nameof(Message.Id), whereId);
+            Dictionary<string, object> dict = new Dictionary<string, object>
+            {
+                { nameof(Message.Id), whereId }
+            };
 
             return Sql.Update(TableName, ToDictionary(set), dict);
         }

@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MelBoxGsm\MelBoxGsm.csproj" />
     <ProjectReference Include="..\MelBoxSql\MelBoxSql.csproj" />
   </ItemGroup>
 
@@ -18,6 +19,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Templates\FormCompany.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\FormGsm.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Templates\FormLogin.html">

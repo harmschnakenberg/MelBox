@@ -11,9 +11,9 @@ namespace MelBoxWeb
     public partial class Server
     {
         private static string _serverPort = PortFinder.FindNextLocalOpenPort(1234);
+        private static IRestServer restServer;
 
         public static int Level_Admin { get; set; } = 9000; //Benutzerverwaltung u. -Einteilung
-
         public static int Level_Reciever { get; set; } = 2000; //Empfänger bzw. Bereitschaftsnehmer
 
         public static string Html_Skeleton { get; } = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "Skeleton.html");
@@ -23,6 +23,7 @@ namespace MelBoxWeb
         public static string Html_FormCompany { get; } = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "FormCompany.html");
         public static string Html_FormRegister { get; } = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "FormRegister.html");
         public static string Html_FormShift { get; } = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "FormShift.html");
+        public static string Html_FormGsm { get; } = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "FormGsm.html");
 
         /// <summary>
         /// GUID - User-Id
@@ -30,37 +31,52 @@ namespace MelBoxWeb
         public static Dictionary<string, MelBoxSql.Contact> LogedInHash = new Dictionary<string, MelBoxSql.Contact>();
 
         public static void Start()
-        {
+        {            
+            //using (var server = RestServerBuilder.UseDefaults().Build())
+            //using (var server = RestServerBuilder.From<Startup>().Build())
+            //{
+            //    //server.Prefixes.Add($"http://localhost:{_serverPort}/");
 
-            using (var server = RestServerBuilder.UseDefaults().Build())
+            //    Console.WriteLine(string.Join(", ", server.Prefixes));
+
+            //    server.AfterStarting += (s) =>
+            //    {
+            //        Process.Start("explorer", s.Prefixes.First());
+            //    };
+
+            //    server.AfterStopping += (s) =>
+            //    {
+            //        Console.WriteLine("Web-Server beendet.");
+            //    };
+
+            //    //server.Prefixes.Add("https://*:443/");
+                
+            //    server.Start();
+
+
+            //    Console.WriteLine("Press enter to stop the server");
+            //    Console.ReadLine();
+            //}
+
+            restServer = RestServerBuilder.From<Startup>().Build();
+
+            restServer.AfterStarting += (s) =>
             {
-                server.Prefixes.Add($"http://localhost:{_serverPort}/");
+                Process.Start("explorer", s.Prefixes.First());
+            };
 
-                Console.WriteLine(string.Join(", ", server.Prefixes));
+            restServer.AfterStopping += (s) =>
+            {
+                Console.WriteLine("Web-Server beendet.");
+            };
 
-                server.AfterStarting += (s) =>
-                {
-                    Process.Start("explorer", s.Prefixes.First());
-                };
-
-                server.AfterStopping += (s) =>
-                {
-                    Console.WriteLine("Web-Server beendet.");
-                };
-
-                //server.Prefixes.Add("https://*:443/");
-                server.Start();
-
-
-                Console.WriteLine("Press enter to stop the server");
-                Console.ReadLine();
-            }
-
+            restServer.Start();            
         }
 
-
-
-
-
+        public static void Stop()
+        {
+            if (restServer != null)
+                restServer.Stop();
+        }
     }
 }

@@ -37,7 +37,7 @@ namespace MelBoxGsm
 
         #region Events
 
-        public delegate void SmsRecievedEventHandler(object sender, Sms e);
+        public delegate void SmsRecievedEventHandler(object sender, ParseSms e);
 
         public static event SmsRecievedEventHandler SmsRecievedEvent;
 
@@ -194,7 +194,7 @@ namespace MelBoxGsm
                         messageText += line[i] + " ";
                     }
 
-                    Sms sms = new Sms
+                    ParseSms sms = new ParseSms
                     {
                         RawHeader = line[0],
                         Index = index,
@@ -238,7 +238,7 @@ namespace MelBoxGsm
         #endregion
     }
 
-    public class Sms : EventArgs
+    public class ParseSms : EventArgs
     {
         public string RawHeader { get; set; }
         public int Index { get; set; }

@@ -11,6 +11,29 @@ namespace MelBoxCore
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine(e.Property + ":\r\n" + e.Value);
             Console.ForegroundColor = ConsoleColor.Gray;
+
+            switch (e.Property)
+            {
+                case Gsm.Modem.SignalQuality:
+
+                    break;
+                case Gsm.Modem.BitErrorRate:
+                    break;
+                case Gsm.Modem.OwnPhoneNumber:
+                    break;
+                case Gsm.Modem.OwnName:
+                    break;
+                case Gsm.Modem.ServiceCenterNumber:
+                    break;
+                case Gsm.Modem.NetworkRegistration:
+                    break;
+                case Gsm.Modem.ProviderName:
+                    break;
+                case Gsm.Modem.IncomingCall:
+                    break;
+                default:
+                    break;
+            }
         }
 
         private static void Gsm_StatusReportRecievedEvent(object sender, StatusReport e)
@@ -20,7 +43,7 @@ namespace MelBoxCore
             Console.ForegroundColor = ConsoleColor.Gray;
         }
 
-        private static void Gsm_SmsRecievedEvent(object sender, Sms e)
+        private static void Gsm_SmsRecievedEvent(object sender, ParseSms e)
         {
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine(e.Sender + ":\r\n" + e.Message);

@@ -55,11 +55,13 @@ namespace MelBoxSql
                     e = s.AddDays(1);
                 }
 
-                Shift shift = new Shift();
-                shift.ContactId = ContactId;
-                shift.EntryTime = DateTime.UtcNow;
-                shift.Start = ShiftStart(s).ToUniversalTime();
-                shift.End = ShiftEnd(s).ToUniversalTime();
+                Shift shift = new Shift
+                {
+                    ContactId = ContactId,
+                    EntryTime = DateTime.UtcNow,
+                    Start = ShiftStart(s).ToUniversalTime(),
+                    End = ShiftEnd(s).ToUniversalTime()
+                };
                 s = e;
                 e = s.AddDays(1);
 

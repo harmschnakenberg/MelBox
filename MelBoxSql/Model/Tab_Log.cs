@@ -70,6 +70,12 @@ namespace MelBoxSql
             return Sql.SelectDataTable("Log", query, Sql.Alias(columns));
         }
 
+        public static System.Data.DataTable SelectLast(int count = 1000)
+        {
+            string query = "SELECT * FROM " + TableName + " ORDER BY LogTime DESC LIMIT " + count;
+
+            return Sql.SelectDataTable("Log", query, null);
+        }
     }
 
     public class Log

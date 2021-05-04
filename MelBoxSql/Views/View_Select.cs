@@ -17,7 +17,7 @@ namespace MelBoxSql
             return Sql.SelectDataTable("Empfangen", query);
         }
 
-        public static System.Data.DataTable Recieved_View(int count)
+        public static System.Data.DataTable Recieved_View_Last(int count)
         {
             string query = "SELECT Nr, datetime(Empfangen, 'localtime') AS Empfangen, Von, Inhalt FROM " + Recieved_ViewName +
                             " ORDER BY Empfangen DESC LIMIT " + count ;
@@ -38,14 +38,13 @@ namespace MelBoxSql
             return Sql.SelectDataTable("Gesendet", query);
         }
 
-        public static System.Data.DataTable Sent_View(int count)
+        public static System.Data.DataTable Sent_View_Last(int count)
         {
             string query = "SELECT Gesendet, An, Inhalt, Via, Sendestatus FROM " + Sent_ViewName +
                             " ORDER BY Gesendet DESC LIMIT " + count;
 
             return Sql.SelectDataTable("Gesendet", query);
         }
-
 
         public static System.Data.DataTable Overdue_View()
         {

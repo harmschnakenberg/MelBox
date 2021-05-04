@@ -110,6 +110,7 @@ namespace MelBoxGsm
             {
                 int signalQuality = (rawSignal > 32) ? -1 : rawSignal * 100 / 32;
 
+                GsmStatus.SignalQuality = signalQuality;
                 OnGsmStatusReceived(Modem.SignalQuality, signalQuality);
             }
 
@@ -144,6 +145,7 @@ namespace MelBoxGsm
                         break;
                 }
 
+                GsmStatus.SignalErrorRate = ModemErrorRate;
                 OnGsmStatusReceived(Modem.BitErrorRate, ModemErrorRate);
             }
         }
@@ -165,8 +167,14 @@ namespace MelBoxGsm
                 .Replace(Answer_MyPhoneNumber, string.Empty)
                 .Split(',');
 
-            OnGsmStatusReceived(Modem.OwnName, items[0].Trim('"'));
-            OnGsmStatusReceived(Modem.OwnPhoneNumber, items[1].Trim('"'));
+            string name = items[0].Trim('"');
+            string number = items[1].Trim('"');
+
+            GsmStatus.OwnName = name;
+            GsmStatus.OwnNumber = number;
+
+            OnGsmStatusReceived(Modem.OwnName, name);
+            OnGsmStatusReceived(Modem.OwnPhoneNumber, number);
         }
 
         //  +CREG: 0,1 | +CREG: 1
@@ -203,6 +211,7 @@ namespace MelBoxGsm
                     break;
             }
 
+            GsmStatus.NetworkRegistration = regString;
             OnGsmStatusReceived(Modem.NetworkRegistration, regString);
         }
 
@@ -213,7 +222,9 @@ namespace MelBoxGsm
                 .Replace(Answer_ServiceCenterNumber, string.Empty)
                 .Split(',');
 
-            OnGsmStatusReceived(Modem.ServiceCenterNumber, items[0].Trim('"'));
+            string number = items[0].Trim('"');
+            GsmStatus.ServiceCenterNumber = number;
+            OnGsmStatusReceived(Modem.ServiceCenterNumber, number);
         }
 
         //  +COPS: 0,0,"T-Mobile D"
@@ -223,7 +234,11 @@ namespace MelBoxGsm
                 .Replace(Answer_ProviderName, string.Empty)
                 .Split(',');
 
-            OnGsmStatusReceived(Modem.ProviderName, items[2].Trim('"'));
+            if (items.Length < 3) return;
+
+            string name = items[2].Trim('"');
+            GsmStatus.ProviderName = name;
+            OnGsmStatusReceived(Modem.ProviderName, name);
         }
 
         //  +CLIP: <number>, <type>, , [, <alpha>][, <CLI validity>]

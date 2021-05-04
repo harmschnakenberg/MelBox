@@ -206,10 +206,12 @@ namespace MelBoxSql
 
             string query = "SELECT Id FROM " + TableName + " WHERE Name = @Name AND Password = @Password AND Accesslevel > 0;";
 
-            Dictionary<string, object> valuePairs = new Dictionary<string, object>();
-            valuePairs.Add("@Name", name);
-            valuePairs.Add("@Password", encryped_pw);
-                
+            Dictionary<string, object> valuePairs = new Dictionary<string, object>
+            {
+                { "@Name", name },
+                { "@Password", encryped_pw }
+            };
+
             System.Data.DataTable dt = Sql.SelectDataTable("Kontakt", query, valuePairs);
 
             int.TryParse(Sql.GetFirstEntry(dt, nameof(Contact.Id)), out int result);

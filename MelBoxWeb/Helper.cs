@@ -47,14 +47,17 @@ namespace MelBoxWeb
         {
 #if DEBUG
 
-            ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+            //ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 #else
             string guid = string.Empty;
 #endif
-            Dictionary<string, string> pairs = new Dictionary<string, string>();
-            pairs.Add("##Titel##", titel);
-            pairs.Add("##Id##", guid != null ? string.Empty : "Gastzugang");
-            pairs.Add("##Inhalt##", body);
+            Dictionary<string, string> pairs = new Dictionary<string, string>
+            {
+                { "##Titel##", titel },
+               // { "##Id##", guid != null ? string.Empty : "Gast" },
+                { "##Quality##", MelBoxGsm.GsmStatus.SignalQuality.ToString() },
+                { "##Inhalt##", body }
+            };
 
             string html = Server.Page(Server.Html_Skeleton, pairs);
 
