@@ -45,9 +45,15 @@ namespace MelBoxSql
             return Sql.CreateTable2(TableName, columns);
         }
 
-        public static bool Insert(Log company)
+        public static bool Insert(Log log)
         {
-            return Sql.Insert(TableName, ToDictionary(company));
+            return Sql.Insert(TableName, ToDictionary(log));
+        }
+
+        public static bool Insert(Topic topic, int prio, string message)
+        {
+            Log log = new Log(topic, prio, message);
+            return Sql.Insert(TableName, ToDictionary(log));
         }
 
         public static bool Update(Log set, Log where)

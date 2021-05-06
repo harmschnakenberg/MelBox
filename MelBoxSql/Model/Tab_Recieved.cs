@@ -44,6 +44,19 @@ namespace MelBoxSql
             return Sql.Insert(TableName, ToDictionary(recieved));
         }
 
+        //public static bool InsertRecSms(string sender, string message, DateTime recievedUtcTime)
+        //{
+        //    int fromId = MelBoxSql.Tab_Contact.SelectContactId(sender);
+        //    int messageId = MelBoxSql.Tab_Message.SelectOrCreateMessageId(message);
+
+        //    Recieved recieved1 = new Recieved(fromId, messageId)
+        //    {
+        //        RecTime = recievedUtcTime
+        //    };
+
+        //    return Sql.Insert(TableName, ToDictionary(recieved1));
+        //}
+
         public static bool Update(Recieved set, Recieved where)
         {
             return Sql.Update(TableName, ToDictionary(set), ToDictionary(where));

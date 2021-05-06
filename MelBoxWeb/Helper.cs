@@ -43,20 +43,14 @@ namespace MelBoxWeb
             return cookies;
         }
 
-        public static async System.Threading.Tasks.Task PageAsync(IHttpContext context, string titel, string body)
+        public static async System.Threading.Tasks.Task PageAsync(IHttpContext context, string titel, string body, MelBoxSql.Contact user = null)
         {
-#if DEBUG
-
-            //ReadCookies(context).TryGetValue("MelBoxId", out string guid);
-#else
-            string guid = string.Empty;
-#endif
             Dictionary<string, string> pairs = new Dictionary<string, string>
             {
                 { "##Titel##", titel },
-               // { "##Id##", guid != null ? string.Empty : "Gast" },
-                { "##Quality##", MelBoxGsm.GsmStatus.SignalQuality.ToString() },
-                { "##Inhalt##", body }
+                { "##Quality##", GsmStatus.SignalQuality.ToString() },
+                { "##Inhalt##", body },
+                { "##User##", user == null ? string.Empty : user.Name }
             };
 
             string html = Server.Page(Server.Html_Skeleton, pairs);
@@ -129,5 +123,29 @@ namespace MelBoxWeb
             return string.Empty;
         }
 
+        public static string Json_GsmStatus()
+        {
+            StringBuilder sb = new StringBuilder("{");
+            sb.Append("\"" + nameof(GsmStatus.SignalQuality) + "\":" + GsmStatus.SignalQuality + ",");
+            sb.Append("\"" + nameof(GsmStatus.SignalErrorRate) + "\":" + Math.Round(GsmStatus.SignalErrorRate * 10)
+                + ",");
+            sb.Append("\"" + nameof(GsmStatus.NetworkRegistration) + "\":\"" + GsmStatus.NetworkRegistration + "\"");
+            sb.Append("}");
+
+            return sb.ToString();
+        }
+    }
+
+
+    public static class GsmStatus
+    {
+        const string init = "-unbekannt-";
+        public static int SignalQuality { get; set; } = -1;
+        public static double SignalErrorRate { get; set; } = -1;
+        public static string OwnName { get; set; } = init;
+        public static string OwnNumber { get; set; } = init;
+        public static string NetworkRegistration { get; set; } = init;
+        public static string ServiceCenterNumber { get; set; } = init;
+        public static string ProviderName { get; set; } = init;
     }
 }

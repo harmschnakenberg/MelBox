@@ -62,6 +62,7 @@ namespace MelBoxSql
             return Sql.Insert(TableName, ToDictionary(sent));
         }
 
+
         public static bool Update(Sent set, Sent where)
         {
             return Sql.Update(TableName, ToDictionary(set), ToDictionary(where));

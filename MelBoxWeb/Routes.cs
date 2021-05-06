@@ -22,11 +22,11 @@ namespace MelBoxWeb
         public async Task GsmSignalQuality(IHttpContext context)
         {
             StringBuilder sb = new StringBuilder("{");
-            sb.Append("\"" + nameof(MelBoxGsm.GsmStatus.SignalQuality) + "\":" + MelBoxGsm.GsmStatus.SignalQuality + ",");
-            sb.Append("\"" + nameof(MelBoxGsm.GsmStatus.SignalErrorRate) + "\":" + MelBoxGsm.GsmStatus. SignalErrorRate + ",");
-            sb.Append("\"" + nameof(MelBoxGsm.GsmStatus.NetworkRegistration) + "\":\"" + MelBoxGsm.GsmStatus.NetworkRegistration + "\"");
+            sb.Append("\"" + nameof(GsmStatus.SignalQuality) + "\":" + GsmStatus.SignalQuality + ",");
+            sb.Append("\"" + nameof(GsmStatus.SignalErrorRate) + "\":\"" + GsmStatus.SignalErrorRate + "\",");
+            sb.Append("\"" + nameof(GsmStatus.NetworkRegistration) + "\":\"" + GsmStatus.NetworkRegistration + "\"");
             sb.Append("}");
-               
+
             await context.Response.SendResponseAsync(sb.ToString()).ConfigureAwait(false);
         }
 
@@ -476,7 +476,7 @@ namespace MelBoxWeb
             payload.TryGetValue("email", out string email);
             payload.TryGetValue("viaPhone", out string viaPhone);
             payload.TryGetValue("phone", out string phoneStr);
-            //KeyWord nicht vergebbar
+            //KeyWord bei Neuanlage nicht vergebbar
             payload.TryGetValue("MaxInactiveHours", out string maxInactiveHoursStr);
             payload.TryGetValue("Accesslevel", out string accesslevelStr);
             #endregion
@@ -487,7 +487,7 @@ namespace MelBoxWeb
                 Name = name,
                 EntryTime = DateTime.UtcNow,
                 Password = Tab_Contact.Encrypt(password),
-                Email = email
+                Email = email,
             };
 
             if (int.TryParse(CompanyIdStr, out int companyId))
@@ -548,7 +548,7 @@ namespace MelBoxWeb
             payload.TryGetValue("email", out string email);
             payload.TryGetValue("viaPhone", out string viaPhone);
             payload.TryGetValue("phone", out string phoneStr);
-            //KeyWord nicht vergebbar
+            payload.TryGetValue("Keyword", out string keyWord);
             payload.TryGetValue("MaxInactiveHours", out string maxInactiveHoursStr);
             payload.TryGetValue("Accesslevel", out string accesslevelStr);
             #endregion
@@ -564,7 +564,8 @@ namespace MelBoxWeb
             Contact set = new Contact
             {
                 Name = name,
-                EntryTime = DateTime.UtcNow
+                EntryTime = DateTime.UtcNow,                
+                KeyWord = keyWord
             };
 
             if (password.Length > 0)
@@ -881,10 +882,10 @@ namespace MelBoxWeb
         {
             Dictionary<string, string> pairs = new Dictionary<string, string>
             {
-                { "##OwnName##", MelBoxGsm.GsmStatus.OwnName },
-                { "##OwnNumber##", MelBoxGsm.GsmStatus.OwnNumber },
-                { "##ServiceCenter##", MelBoxGsm.GsmStatus.ServiceCenterNumber },
-                { "##ProviderName##" , MelBoxGsm.GsmStatus.ProviderName }
+                { "##OwnName##", GsmStatus.OwnName },
+                { "##OwnNumber##", GsmStatus.OwnNumber },
+                { "##ServiceCenter##", GsmStatus.ServiceCenterNumber },
+                { "##ProviderName##" , GsmStatus.ProviderName }
             };
 
             string html = Server.Page(Server.Html_FormGsm, pairs);

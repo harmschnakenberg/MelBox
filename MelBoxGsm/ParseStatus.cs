@@ -110,7 +110,6 @@ namespace MelBoxGsm
             {
                 int signalQuality = (rawSignal > 32) ? -1 : rawSignal * 100 / 32;
 
-                GsmStatus.SignalQuality = signalQuality;
                 OnGsmStatusReceived(Modem.SignalQuality, signalQuality);
             }
 
@@ -145,7 +144,6 @@ namespace MelBoxGsm
                         break;
                 }
 
-                GsmStatus.SignalErrorRate = ModemErrorRate;
                 OnGsmStatusReceived(Modem.BitErrorRate, ModemErrorRate);
             }
         }
@@ -169,9 +167,6 @@ namespace MelBoxGsm
 
             string name = items[0].Trim('"');
             string number = items[1].Trim('"');
-
-            GsmStatus.OwnName = name;
-            GsmStatus.OwnNumber = number;
 
             OnGsmStatusReceived(Modem.OwnName, name);
             OnGsmStatusReceived(Modem.OwnPhoneNumber, number);
@@ -211,7 +206,6 @@ namespace MelBoxGsm
                     break;
             }
 
-            GsmStatus.NetworkRegistration = regString;
             OnGsmStatusReceived(Modem.NetworkRegistration, regString);
         }
 
@@ -223,7 +217,6 @@ namespace MelBoxGsm
                 .Split(',');
 
             string number = items[0].Trim('"');
-            GsmStatus.ServiceCenterNumber = number;
             OnGsmStatusReceived(Modem.ServiceCenterNumber, number);
         }
 
@@ -235,9 +228,7 @@ namespace MelBoxGsm
                 .Split(',');
 
             if (items.Length < 3) return;
-
             string name = items[2].Trim('"');
-            GsmStatus.ProviderName = name;
             OnGsmStatusReceived(Modem.ProviderName, name);
         }
 

@@ -31,7 +31,7 @@ namespace MelBoxCore
             {
                 request = Console.ReadLine();
 
-                if (request.Length == 0) break;
+                if (request.ToLower() == "exit") break;
 
                 else if (request.StartsWith("Schreibe"))
                 {
@@ -50,15 +50,16 @@ namespace MelBoxCore
                 }
                 else
                 {
-                    Gsm.Write(request);
+                    if (request.Length > 1)
+                        Gsm.Write(request);
                 }
             }
 
             Console.WriteLine("Beliebige Taste zum beenden...");
             Console.ReadKey();
 
-            MelBoxWeb.Server.Stop();
             Gsm.DisConnect();
+            MelBoxWeb.Server.Stop();
         }
 
     }

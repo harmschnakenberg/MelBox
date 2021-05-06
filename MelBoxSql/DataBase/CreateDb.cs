@@ -110,6 +110,7 @@ namespace MelBoxSql
 
                 Contact contact = new Contact
                 {
+                    Id = 1,
                     Name = "SMSZentrale",
                     Password =  Tab_Contact.Encrypt("7307"),
                     Accesslevel = 9000,
@@ -124,6 +125,7 @@ namespace MelBoxSql
 
                 contact = new Contact
                 {
+                    Id = 2,
                     Name = "Bereitschaftshandy",
                     Password = Tab_Contact.Encrypt("7307"),
                     Accesslevel = 1000,
@@ -137,6 +139,7 @@ namespace MelBoxSql
 
                 contact = new Contact
                 {
+                    Id = 3,
                     Name = "Kreutzträger Service",
                     Password = Tab_Contact.Encrypt("7307"),
                     Accesslevel = 9000,

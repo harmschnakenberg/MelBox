@@ -63,7 +63,23 @@ namespace MelBoxSql
 
         public static bool Insert(Contact contact)
         {
+            Console.WriteLine("Erstelle neuen Benutzer: " + contact.Name);
             return Sql.Insert(TableName, ToDictionary(contact));
+        }
+
+        public static bool InsertNewContact(string phone, string message)
+        {
+            Contact contact = new Contact();
+            contact.Accesslevel = 0;
+            contact.EntryTime = DateTime.UtcNow;
+            contact.KeyWord = Tab_Message.ExtractKeyWord(message);
+            contact.Name = $"NeuerBenutzer '{contact.KeyWord}' vom {contact.EntryTime.ToShortDateString()}";
+            contact.CompanyId = 1; // ohne Zuordnung aufgrund SELECT-Anweisung keine Darstellung in Weboberfläche.
+
+            if (ulong.TryParse(phone.Trim('+'), out ulong _phone))
+                contact.Phone = _phone;
+
+            return MelBoxSql.Tab_Contact.Insert(contact);
         }
 
         public static bool Update(Contact set, Contact where)
@@ -127,11 +143,41 @@ namespace MelBoxSql
             return contact;
         }
 
+        /// <summary>
+        /// Fidnet die Id eines Kontakts anhand von Name, Telefon, Email oder KeyWord
+        /// </summary>
+        /// <param name="ident">Name oder Telefon oder Email oder KeyWord</param>
+        /// <returns>Id des Kontakts</returns>
+        public static int SelectContactId(string ident)
+        {
+            if (ident == null)
+            {
+                Console.WriteLine("SelectContactId(): Es wurde kein Identifizierungs-Paranmeter gesetzt.");
+                return 0;
+            }
+
+            ident = ident.TrimStart('+'); //Telefonnummer
+
+            string query = $"SELECT Id FROM {TableName} WHERE Name Like '%{ident}%' OR Phone = {ident} OR Email = {ident} OR KeyWord = {ident}; ";
+
+            System.Data.DataTable dt = Sql.SelectDataTable("Kontakt-Id", query, null);
+
+            if (dt.Rows.Count == 0)
+            {
+                Console.WriteLine("SelectContactId(): Es konnte kein Benutzer mit >" + ident + "< gefunden werden.");
+                return 0;
+            }
+
+            int.TryParse(dt.Rows[0][0].ToString(), out int contactId);
+           
+            return contactId;
+        }
+
         public static System.Data.DataTable SelectContactList(int accesslevel, int contactId = 0, string operation = "<=")
         {          
             string query = "SELECT Contact.Id AS Id, Contact.Name AS Name, Company.Name AS Firma, Company.City AS Ort" +
                 " FROM " + TableName + 
-                " JOIN " + Tab_Company.TableName + " ON Company.Id = Contact.CompanyId " +
+                " JOIN " + Tab_Company.TableName + " ON Company.Id = Contact.CompanyId" + //IFNULL() da sonst Kontakte ohne Firmeneintrag nicht angezeigt werden.
                 " WHERE Accesslevel " + operation + " " + accesslevel ;
 
             if (contactId > 0)

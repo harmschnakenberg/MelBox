@@ -8,7 +8,7 @@ namespace MelBoxSql
     {
         internal const string TableName = "Message";
 
-        [Flags]
+       // [Flags]
         public enum BlockedDays
         {
             NaN = -1,
@@ -29,8 +29,8 @@ namespace MelBoxSql
         {
             BlockedDays blockedDays = BlockedDays.None;
 
-            if (workdays) blockedDays |= BlockedDays.Mo & BlockedDays.Di & BlockedDays.Mi & BlockedDays.Do & BlockedDays.Fr;
-            if (weekend) blockedDays |= BlockedDays.Sa & BlockedDays.So;
+            if (workdays) blockedDays &= BlockedDays.Mo & BlockedDays.Di & BlockedDays.Mi & BlockedDays.Do & BlockedDays.Fr;
+            if (weekend) blockedDays &= BlockedDays.Sa & BlockedDays.So;
             
             return blockedDays;
         }
@@ -124,6 +124,46 @@ namespace MelBoxSql
             return message;
         }
 
+        public static int SelectOrCreateMessageId(string Message)
+        {
+            string query = $"SELECT Id FROM {TableName} WHERE Content = '{Message}'; ";
+
+            System.Data.DataTable dt = Sql.SelectDataTable("Id von Nachricht", query, null);
+
+            if (dt.Rows.Count == 0)
+            {
+                Message message = new Message
+                {
+                    EntryTime = DateTime.UtcNow,
+                    Content = Message,
+                    BlockedDays = BlockedDays.None
+                };
+
+                if (!Insert(message))                
+                    throw new Exception("SelectOrCreateMessageId(): Neue Nachricht \r\n" + message + "\r\nkonnte nicht in DB gespeichert werden.");                
+                else                
+                    return SelectOrCreateMessageId(Message); //Rekursiver Aufruf                
+            }
+
+            int.TryParse(dt.Rows[0][0].ToString(), out int messageId);
+            
+            return messageId;
+        }
+
+        public static string ExtractKeyWord(string message)
+        {
+            char[] split = new char[] { ' ', ',', '-', '.', ':', ';' };
+            string[] words = message.Split(split);
+
+            string KeyWords = words[0].Trim();
+
+            if (words.Length > 1)
+            {
+                KeyWords += " " + words[1].Trim();
+            }
+
+            return KeyWords;
+        }
 
     }
 

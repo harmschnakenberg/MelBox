@@ -73,25 +73,41 @@ namespace MelBoxGsm
 
         private void ContinuousRead()
         {
-            byte[] buffer = new byte[4096];
-            Action kickoffRead = null;
-            kickoffRead = (Action)(() => BaseStream.BeginRead(buffer, 0, buffer.Length, delegate (IAsyncResult ar)
+            try
             {
-                try
+                if (!BaseStream.CanRead) return;
+                byte[] buffer = new byte[4096];
+                Action kickoffRead = null;
+                kickoffRead = (Action)(() => BaseStream.BeginRead(buffer, 0, buffer.Length, delegate (IAsyncResult ar)
                 {
-                    int count = BaseStream.EndRead(ar);
-                    byte[] dst = new byte[count];
-                    Buffer.BlockCopy(buffer, 0, dst, 0, count);
-                    OnDataReceived(dst);
-                }
+                    try
+                    {
+                        int count = BaseStream.EndRead(ar);
+                        byte[] dst = new byte[count];
+                        Buffer.BlockCopy(buffer, 0, dst, 0, count);
+                        //Console.WriteLine($"{ar.IsCompleted} Bytes: {count}\t{buffer.Length} > {dst.Length}\t{System.Text.Encoding.UTF8.GetString(dst)}");
+                        OnDataReceived(dst);
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        //Kein Fehler erkennbar?!?
+                        Console.WriteLine("ContinuousRead(): IndexOutOfRangeException - Mal Prüfen!");
+                        //TEST
+                        //OnDataReceived(buffer); 
+                    }
 #pragma warning disable CA1031 // Do not catch general exception types
-                catch (Exception exception)
-                {
-                    Console.WriteLine("Lesefehler COM-Port:\r\n" + exception.GetType() + Environment.NewLine + exception.Message + Environment.NewLine + exception.StackTrace);
-                }
+                    catch (Exception exception)
+                    {
+                        Console.WriteLine("ContinuousRead(): Lesefehler2 COM-Port:\r\n" + exception.GetType() + Environment.NewLine + exception.Message + Environment.NewLine + exception.InnerException + Environment.NewLine + exception.Source + Environment.NewLine + exception.StackTrace);
+                    }
 #pragma warning restore CA1031 // Do not catch general exception types
                 kickoffRead();
-            }, null)); kickoffRead();
+                }, null)); kickoffRead();
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("ContinuousRead(): Lesefehler1 COM-Port:\r\n" + exception.GetType() + Environment.NewLine + exception.Message + Environment.NewLine + exception.InnerException + Environment.NewLine + exception.Source + Environment.NewLine + exception.StackTrace);
+            }
         }
 
         public delegate void DataReceivedEventHandler(object sender, DataReceivedArgs e);
@@ -117,6 +133,26 @@ namespace MelBoxGsm
         }
 
         #endregion
+
+        #region alternative Read Serial Port
+        //public async Task<System.IO.Stream> ReceiveData()
+        //{
+        //    //Quelle: https://stackoverflow.com/questions/33226414/correct-implementation-of-async-serialport-read
+        //    var buffer = new byte[4096];
+        //    int readBytes = 0;
+        //    SerialPort port = new SerialPort(/* ... */);
+        //    using (System.IO.MemoryStream memoryStream = new System.IO.MemoryStream())
+        //    {
+        //        while ((readBytes = await port.BaseStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        //        {
+        //            memoryStream.Write(buffer, 0, readBytes);
+        //        }
+
+        //        return memoryStream;
+        //    }
+        //}
+        #endregion
+
 
         #region Write
 

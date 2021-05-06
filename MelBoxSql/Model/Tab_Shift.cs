@@ -8,6 +8,8 @@ namespace MelBoxSql
     {
         internal const string TableName = "Shift";
 
+        public static int DefaultShiftContactId { get; set; } = 2; //Bereitschaftshandy
+
         private static Dictionary<string, object> ToDictionary(Shift shift)
         {
             Dictionary<string, object> set = new Dictionary<string, object>();
@@ -37,6 +39,14 @@ namespace MelBoxSql
 
         public static bool Insert(Shift shift)
         {
+            return Sql.Insert(TableName, ToDictionary(shift));
+        }
+
+        public static bool InsertDefault()
+        {
+            Console.WriteLine("InsertDefault(): Trage eine Bereitschaft für heute (Bereitschaftshandy) ein.");
+            Shift shift = new Shift(DefaultShiftContactId, DateTime.UtcNow);
+
             return Sql.Insert(TableName, ToDictionary(shift));
         }
 
@@ -119,6 +129,49 @@ namespace MelBoxSql
             shift.End = end;
           
             return shift;            
+        }
+
+        public static List<Shift> SelectOrCreateCurrentShift()
+        {
+            #region Wenn heute keine Bereitschaft eingetragen ist, neue Standardbereitschaft eintragen
+            string query1 = $"SELECT Id FROM {TableName} WHERE DATE(Start) = DATE('now')";
+            System.Data.DataTable dt1 = Sql.SelectDataTable("Bereitschaft für heute vorhanden?", query1, null);
+
+            if (dt1.Rows.Count == 0)
+            {
+                if (!MelBoxSql.Tab_Shift.InsertDefault())
+                {
+                    throw new Exception("SelectOrCreateCurrentShift(): Neue Standard-Bereitschaft konnte nicht in DB gespeichert werden.");
+                }
+            }
+            #endregion
+
+            string query2 = $"SELECT * FROM {TableName} WHERE CURRENT_TIMESTAMP BETWEEN {nameof(Shift.Start)} AND {nameof(Shift.End)}";
+            System.Data.DataTable dt2 = Sql.SelectDataTable("Eine Nacht", query2, null);
+
+            List<Shift> shifts = new List<Shift>();
+            if (dt2.Rows.Count == 0) return shifts; //Keine Weiterleitung zu diesem Zeitpunkt
+
+            for (int i = 0; i < dt2.Rows.Count; i++)
+            {
+                Shift shift = new Shift();
+
+                int.TryParse(dt2.Rows[i][nameof(shift.Id)].ToString(), out int shiftId);
+                DateTime.TryParse(dt2.Rows[i][nameof(shift.EntryTime)].ToString(), out DateTime entryTime);
+                int.TryParse(dt2.Rows[i][nameof(shift.ContactId)].ToString(), out int contactId);
+                DateTime.TryParse(dt2.Rows[i][nameof(shift.Start)].ToString(), out DateTime start);
+                DateTime.TryParse(dt2.Rows[i][nameof(shift.End)].ToString(), out DateTime end);
+
+                shift.Id = shiftId;
+                shift.EntryTime = entryTime;
+                shift.ContactId = contactId;
+                shift.Start = start;
+                shift.End = end;
+
+                shifts.Add(shift);
+            }
+
+            return shifts;
         }
 
 
