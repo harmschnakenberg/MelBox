@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Timers;
 
 namespace MelBoxGsm
 {
@@ -13,6 +14,11 @@ namespace MelBoxGsm
             GsmStatusReceived?.Invoke(null, new GsmStatusArgs { Property = property, Value = value });
         }
         #endregion
+
+        #region Timer ; Regelmäßige Anfragen
+        static Timer aksingTimer = new Timer(60000);
+        #endregion
+
 
         #region Abfragen
         public static void ModemSetup(string serialPort = "")
@@ -71,8 +77,27 @@ namespace MelBoxGsm
 
                 //Statusänderung SIM-Schubfach melden
                 Write("AT^SCKS=1");
+
+                #region Regelmäßige Anfragen an das Modem
+                aksingTimer.Elapsed += new ElapsedEventHandler(Ask_RegularQueue);
+                aksingTimer.AutoReset = true;
+                aksingTimer.Start();
+                #endregion
             }
 
+        }
+
+        /// <summary>
+        /// Regelmäßig (alle Minute) gestellte Anfragen an das Modem
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private static void Ask_RegularQueue(object sender, ElapsedEventArgs e)
+        {
+            Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " Uhr");
+            Ask_NetworkRegistration();
+            Ask_SignalQuality();
+            Ask_SmsRead();
         }
 
         public static void Ask_SignalQuality()
