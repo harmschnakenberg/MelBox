@@ -69,6 +69,8 @@ namespace MelBoxGsm
                 //Display unsolicited result codes
                 Write("AT+CLIP=1");
 
+                //Statusänderung SIM-Schubfach melden
+                Write("AT^SCKS=1");
             }
 
         }
@@ -179,9 +181,8 @@ namespace MelBoxGsm
                 .Replace(Answer_NetworkRegistration, string.Empty)
                 .Split(',');
 
-            //bei Abfrage items[1], bei Änderungsbenachrichtigung items[0]
-            int pos = (items.Length > 1) ? 1 : 0;
-            int.TryParse(items[pos], out int stat);
+            //bei Abfrage items[1], bei Änderungsbenachrichtigung items[0]            
+            int.TryParse(items[items.Length - 1], out int stat);
 
             string regString = "unbekannt";
             switch (stat)

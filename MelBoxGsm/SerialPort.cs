@@ -75,17 +75,23 @@ namespace MelBoxGsm
         {
             try
             {
-                if (!BaseStream.CanRead) return;
+                // if (!BaseStream.CanRead) return;
                 byte[] buffer = new byte[4096];
                 Action kickoffRead = null;
                 kickoffRead = (Action)(() => BaseStream.BeginRead(buffer, 0, buffer.Length, delegate (IAsyncResult ar)
                 {
                     try
                     {
+                        if (!IsOpen) return; //Wenn beim Lesen die Verbindung abbricht.
+
                         int count = BaseStream.EndRead(ar);
                         byte[] dst = new byte[count];
                         Buffer.BlockCopy(buffer, 0, dst, 0, count);
-                        //Console.WriteLine($"{ar.IsCompleted} Bytes: {count}\t{buffer.Length} > {dst.Length}\t{System.Text.Encoding.UTF8.GetString(dst)}");
+
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Console.WriteLine( System.Text.Encoding.UTF8.GetString(dst) );
+                        Console.ForegroundColor = ConsoleColor.Gray;
+
                         OnDataReceived(dst);
                     }
                     catch (IndexOutOfRangeException)
@@ -101,7 +107,8 @@ namespace MelBoxGsm
                         Console.WriteLine("ContinuousRead(): Lesefehler2 COM-Port:\r\n" + exception.GetType() + Environment.NewLine + exception.Message + Environment.NewLine + exception.InnerException + Environment.NewLine + exception.Source + Environment.NewLine + exception.StackTrace);
                     }
 #pragma warning restore CA1031 // Do not catch general exception types
-                kickoffRead();
+
+                    kickoffRead();
                 }, null)); kickoffRead();
             }
             catch (Exception exception)
@@ -121,7 +128,7 @@ namespace MelBoxGsm
             recLine += rec;
 
             //Melde empfangne Daten, wenn...
-            if (recLine.Contains(Terminator) || recLine.Contains("ERROR"))
+            if (recLine.Contains(Terminator) || recLine.EndsWith("\r\n") || recLine.Contains("ERROR")) //
             {
                 var handler = DataReceived;
                 if (handler != null)
@@ -135,20 +142,29 @@ namespace MelBoxGsm
         #endregion
 
         #region alternative Read Serial Port
-        //public async Task<System.IO.Stream> ReceiveData()
+
+        //private async void ContinuousReadAsync()
+        //{
+        //    byte[] buffer = await ReceiveData(); //Blockiert, bis Antwort kommt!
+        //    OnDataReceived(buffer);
+        //    ContinuousReadAsync();
+        //}
+
+        //public async Task<byte[]> ReceiveData()
         //{
         //    //Quelle: https://stackoverflow.com/questions/33226414/correct-implementation-of-async-serialport-read
         //    var buffer = new byte[4096];
         //    int readBytes = 0;
-        //    SerialPort port = new SerialPort(/* ... */);
+        //    //SerialPort port = new SerialPort(/* ... */);
+        //    if (!base.IsOpen) return null;
         //    using (System.IO.MemoryStream memoryStream = new System.IO.MemoryStream())
         //    {
-        //        while ((readBytes = await port.BaseStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        //        while ((readBytes = await base.BaseStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
         //        {
         //            memoryStream.Write(buffer, 0, readBytes);
         //        }
 
-        //        return memoryStream;
+        //        return memoryStream.ToArray();
         //    }
         //}
         #endregion
@@ -186,7 +202,7 @@ namespace MelBoxGsm
             {
                 sendTimer = new Timer
                 {
-                    Interval = base.WriteTimeout
+                    Interval = ReadTimeout + WriteTimeout
                 };
                 sendTimer.Elapsed += new ElapsedEventHandler(WriteQueue);
                 sendTimer.AutoReset = true;
