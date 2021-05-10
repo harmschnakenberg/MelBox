@@ -47,45 +47,9 @@ namespace MelBoxGsm
 
         #endregion
 
-        #region Fields
-        static readonly AutoResetEvent autoEvent = new AutoResetEvent(false);
-        static int LastSmsReference = 0;
-        public static Dictionary<int, Tuple<string, string>> SentSms = new Dictionary<int, Tuple<string, string>>();
-        #endregion
-
         public static void Ask_SmsDelete(int index)
         {            
             Port.WriteLine("AT+CMGD=" + index);
-        }
-
-        public static void Ask_SmsSend(string phone, string message)
-        {
-            Gsm.Write("AT+CMGS=\"" + phone + "\"\r");
-            Gsm.Write(message + ctrlz);
-
-            //Warte auf ParseMessageReference()
-            autoEvent.WaitOne(5000);
-
-            //Liste sauber halten
-            //if (SentSms.Keys..Contains(LastSmsReference))
-            if (SentSms.Remove(LastSmsReference))
-            {
-                Console.WriteLine("SMS mit Refferenz {0} aus Merkerliste entfernt.", LastSmsReference);
-            }
-
-            //Zur Liste hinzufügen
-            SentSms.Add(LastSmsReference, new Tuple<string, string>(phone, message));
-
-            Console.WriteLine("Erwarte Empfangsbestätigung für " + SentSms.Count + " SMS");
-            foreach (int item in SentSms.Keys)
-            {
-                Console.WriteLine("{0}\t{1}\t{2}", LastSmsReference, SentSms[item].Item1, SentSms[item].Item2);
-            }
-            //Console.WriteLine("SMS mit Refferenz {0} in Merkerliste geschrieben.", LastSmsReference);
-
-            //Bereinigen für ParseMessageReference()
-            LastSmsReference = 0;
-            autoEvent.Reset();
         }
 
         #region SMS Lesen
@@ -170,14 +134,15 @@ namespace MelBoxGsm
                             SendStatus = SendStatus
                         };
 
-                        if (SentSms.ContainsKey(reference))
-                        //if (reference > 0)
-                        {
-                            Report.Reciever = SentSms[reference].Item1;
-                            Report.Message = SentSms[reference].Item2;
-                            SentSms.Remove(reference);
-                        }
+                        //if (SentSms.ContainsKey(reference))
+                        ////if (reference > 0)
+                        //{
+                        //    Report.Reciever = SentSms[reference].Item1;
+                        //    Report.Message = SentSms[reference].Item2;
+                        //    SentSms.Remove(reference);
+                        //}
 
+                        
                         StatusReportRecievedEvent?.Invoke(null, Report);
                     }
                     else
@@ -269,6 +234,8 @@ namespace MelBoxGsm
         public string Message { get; set; }
         public int PhoneNumberType { get; set; }
         public int MessageLength { get; set; }
+
+        public int InternalReference { get; set; }
     }
 
     public class StatusReport : EventArgs

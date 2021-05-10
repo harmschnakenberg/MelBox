@@ -32,31 +32,7 @@ namespace MelBoxWeb
 
         public static void Start()
         {
-            //using (var server = RestServerBuilder.UseDefaults().Build())
-            //using (var server = RestServerBuilder.From<Startup>().Build())
-            //{
-            //    //server.Prefixes.Add($"http://localhost:{_serverPort}/");
-
-            //    Console.WriteLine(string.Join(", ", server.Prefixes));
-
-            //    server.AfterStarting += (s) =>
-            //    {
-            //        Process.Start("explorer", s.Prefixes.First());
-            //    };
-
-            //    server.AfterStopping += (s) =>
-            //    {
-            //        Console.WriteLine("Web-Server beendet.");
-            //    };
-
-            //    //server.Prefixes.Add("https://*:443/");
-                
-            //    server.Start();
-
-
-            //    Console.WriteLine("Press enter to stop the server");
-            //    Console.ReadLine();
-            //}
+            if (restServer != null && restServer.IsListening) return;
 
             restServer = RestServerBuilder.From<Startup>().Build();
 

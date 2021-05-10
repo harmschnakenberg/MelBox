@@ -13,7 +13,8 @@ namespace MelBoxCore
             // Auskommentieren für ohne GSM-Modem
             MelBoxGsm.Gsm.GsmStatusReceived += Gsm_GsmStatusReceived;
             Gsm.SmsRecievedEvent += Gsm_SmsRecievedEvent;
-            Gsm.StatusReportRecievedEvent += Gsm_StatusReportRecievedEvent;            
+            Gsm.StatusReportRecievedEvent += Gsm_StatusReportRecievedEvent;
+            Gsm.SmsSentEvent += Gsm_SmsSentEvent;
             Gsm.ModemSetup("COM7");
             
             //TEST: nicht erfolgreich
@@ -24,43 +25,60 @@ namespace MelBoxCore
             Console.WriteLine("*** STARTE WEBSERVER ***");
             MelBoxWeb.Server.Start();
 
-            string request = "AT";
+            bool run = true;
+            //string request = "AT";
             Console.WriteLine("Lese, Schreibe, AT-Befehl:");
 
-            while (true)
+            while (run)
             {
-                request = Console.ReadLine();
+                string request = Console.ReadLine();
+                string[] words = request.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (words.Length < 0) continue;
 
-                if (request.ToLower() == "exit") break;
-
-                else if (request.StartsWith("Schreibe"))
+                switch (words[0].ToLower())
                 {
-                    string[] r = request.Split(';');
-
-                    Gsm.Ask_SmsSend(r[1], r[2]);
-                }
-                else if (request.StartsWith("Lese"))
-                {
-                    Gsm.Ask_SmsRead("ALL");
-                }
-                else if (request.StartsWith("Signal"))
-                {
-                    Gsm.Ask_SignalQuality();
-                    Gsm.Ask_NetworkRegistration();
-                }
-                else
-                {
-                    if (request.Length > 1)
-                        Gsm.Write(request);
+                    case "exit":
+                        run = false;
+                        break;
+                    case "schreibe":
+                        string[] r = request.Split(';');
+                        Gsm.Ask_SmsSend(r[1], r[2]);
+                        break;
+                    case "lese":
+                        Gsm.Ask_SmsRead("ALL");
+                        break;
+                    case "web":
+                        if (words[1].ToLower() == "start")
+                            MelBoxWeb.Server.Start();
+                        if (words[1].ToLower() == "stop")
+                            MelBoxWeb.Server.Stop();
+                        break;
+                    case "help":
+                        ShowHelp();
+                        break;
+                    default:
+                        if (request.Length > 1)
+                            Gsm.Write(request);
+                        break;
                 }
             }
 
-            Console.WriteLine("Beliebige Taste zum beenden...");
-            Console.ReadKey();
-
             Gsm.DisConnect();
             MelBoxWeb.Server.Stop();
+
+            Console.WriteLine("Beliebige Taste zum beenden...");
+            Console.ReadKey();
         }
 
+        private static void ShowHelp()
+        {
+            Console.WriteLine("** HILFE **");
+            Console.WriteLine("Exit\tProgramm beenden.");
+            Console.WriteLine("Lese\tliest alle im GSM-Modem gespeicherten Nachrichten.");
+            Console.WriteLine("Schreibe;*Tel.*;*Nachricht*\tSchriebt eine SMS an *Tel.*");
+            Console.WriteLine("Web Start\tBedienoberfläche im Browser starten.");
+            Console.WriteLine("Web Stop\tBedienoberfläche im Browser beenden.");
+            Console.WriteLine("*AT-Befehl*\tFührt einen AT-Befehl aus.");
+        }
     }
 }

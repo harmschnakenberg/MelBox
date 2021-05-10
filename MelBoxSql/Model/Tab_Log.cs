@@ -78,7 +78,9 @@ namespace MelBoxSql
 
         public static System.Data.DataTable SelectLast(int count = 1000)
         {
-            string query = "SELECT * FROM " + TableName + " ORDER BY LogTime DESC LIMIT " + count;
+            string query = "SELECT Id, datetime(LogTime, 'localtime') AS Zeit, " +
+                "Topic, " +
+                "Prio, Content AS Eintrag FROM " + TableName + " ORDER BY LogTime DESC LIMIT " + count;
 
             return Sql.SelectDataTable("Log", query, null);
         }

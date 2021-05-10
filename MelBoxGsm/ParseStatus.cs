@@ -5,6 +5,18 @@ namespace MelBoxGsm
 {
     public partial class Gsm
     {
+        public enum Modem
+        {
+            SignalQuality,
+            BitErrorRate,
+            OwnPhoneNumber,
+            OwnName,
+            ServiceCenterNumber,
+            NetworkRegistration,
+            ProviderName,
+            IncomingCall
+        }
+
         #region Event Status-Update
         public delegate void GsmStatusReceivedEventHandler(object sender, GsmStatusArgs e);
         public static event EventHandler<GsmStatusArgs> GsmStatusReceived;
@@ -16,7 +28,7 @@ namespace MelBoxGsm
         #endregion
 
         #region Timer ; Regelmäßige Anfragen
-        static Timer aksingTimer = new Timer(60000);
+        static readonly Timer aksingTimer = new Timer(60000);
         #endregion
 
 
@@ -175,15 +187,7 @@ namespace MelBoxGsm
             }
         }
 
-        //  +CMGS: 123
-        private static void ParseMessageReference(string input)
-        {
-            if (int.TryParse(input.Replace(Answer_SmsSent, string.Empty), out int reference))
-            {
-                LastSmsReference = reference;
-                autoEvent.Set();
-            }
-        }
+       
 
         //  +CNUM: "Eigne Rufnummer","+49123456789",145
         private static void ParseOwnNumber(string input)
@@ -217,6 +221,13 @@ namespace MelBoxGsm
                     break;
                 case 1:
                     regString = "registriert";
+
+                    if (items.Length < 2) //unsolicated Status
+                    {
+                        Write("AT+CNUM"); //Eigene Telefonnumer-Nummer der SIM-Karte auslesen                 
+                        Write("AT+COPS?");//ProviderName?
+                        Write("AT+CSCA?");//SMS-Service-Center Adresse
+                    }
                     break;
                 case 2:
                     regString = "suche Netz";

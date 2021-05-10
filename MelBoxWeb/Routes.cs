@@ -84,7 +84,7 @@ namespace MelBoxWeb
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
-            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            if (guid == null || !Server.LogedInHash.TryGetValue(guid, out Contact user))
             {
                 await Home(context);
                 return;
@@ -405,7 +405,7 @@ namespace MelBoxWeb
             #region Anfragenden Benutzer identifizieren
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
-            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            if (guid == null || !Server.LogedInHash.TryGetValue(guid, out Contact user))
             {
                 await Home(context);
                 return;
