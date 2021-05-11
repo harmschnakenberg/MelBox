@@ -220,13 +220,25 @@ namespace MelBoxSql
 
                 Tab_Shift.CreateTable();
 
-                Shift shift1 = new Shift(1, DateTime.UtcNow.AddHours(17 - DateTime.UtcNow.Hour), DateTime.UtcNow.AddDays(1).AddHours(7 - DateTime.UtcNow.Hour) );
-
+                Shift shift1 = new Shift(1, DateTime.UtcNow);
                 Tab_Shift.Insert(shift1);
 
                 #endregion
 
                 Views_Create();
+
+                #region Hilfstabelle
+
+                Dictionary<string, string> columns = new Dictionary<string, string>
+                {
+                    { "Id", "INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT" },
+                    { "DischargeTime",  "TEXT" },
+                    { "InternalReference", "INTEGER" }
+                };
+
+                Sql.CreateTable2("Reports", columns);
+
+                #endregion
 
             }
             catch (Exception ex)

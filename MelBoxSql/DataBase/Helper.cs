@@ -45,6 +45,18 @@ namespace MelBoxSql
 
             return newArgs;
         }
+
+
+
+
+        public static bool InsertReportProtocoll(DateTime dischargeTime, int internalReference)
+        {
+            Dictionary<string, object> set = new Dictionary<string, object>();
+            set.Add("DischargeTime", dischargeTime);
+            set.Add("InternalReference", internalReference);
+
+            return Sql.Insert("Reports", set);
+        }
     }
 
 }

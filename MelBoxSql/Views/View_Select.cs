@@ -40,7 +40,8 @@ namespace MelBoxSql
 
         public static System.Data.DataTable Sent_View_Last(int count)
         {
-            string query = "SELECT Gesendet, An, Inhalt, Via, Sendestatus FROM " + Sent_ViewName +
+
+            string query = "SELECT datetime(Gesendet, 'localtime') AS Gesendet, An, Inhalt, Via, Sendestatus FROM " + Sent_ViewName +
                             " ORDER BY Gesendet DESC LIMIT " + count;
 
             return Sql.SelectDataTable("Gesendet", query);

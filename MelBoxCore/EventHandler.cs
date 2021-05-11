@@ -16,10 +16,11 @@ namespace MelBoxCore
 
         private static void Gsm_GsmStatusReceived(object sender, GsmStatusArgs e)
         {
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine(e.Property + ":\r\n" + e.Value);
-            Console.ForegroundColor = ConsoleColor.Gray;
 
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine(e.Property + ":\r\n" + e.Value);
+                Console.ForegroundColor = ConsoleColor.Gray;
+            
             switch (e.Property)
             {
                 case Gsm.Modem.SignalQuality:
@@ -55,41 +56,40 @@ namespace MelBoxCore
 
         private static void Gsm_StatusReportRecievedEvent(object sender, StatusReport e)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine("SMS-Sendebestätigung | Status: " + e.SendStatus + " | intern: " + e.InternalReference +"\t" + e.Reciever + ":\r\n" + e.Message);
-            Console.ForegroundColor = ConsoleColor.Gray;
+        
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine("SMS-Sendebestätigungs-Nr. intern: " + e.InternalReference);
+                Console.ForegroundColor = ConsoleColor.Gray;
+            
+            //TEST: In Hilfstabelle schreiben
+            MelBoxSql.Sql.InsertReportProtocoll(e.DischargeTimeUtc, e.InternalReference);
 
-            if (e.Reciever == null && e.Message == null) //z.B. nach Neustart 'alte' Sendebestätigungen aus SIM-Speicher
-            {
-                Console.WriteLine("Die SMS-Sendebestätigung mit der Referrenz " + e.InternalReference + " konnte keiner gesendeten Nachricht zugeordnet werden.");
-                return;
-            }
 
-            int contactId = MelBoxSql.Tab_Contact.SelectContactId(e.Reciever);
-            int contentId = MelBoxSql.Tab_Message.SelectOrCreateMessageId(e.Message);
+            //int contactId = MelBoxSql.Tab_Contact.SelectContactId(e.Reciever);
+            //int contentId = MelBoxSql.Tab_Message.SelectOrCreateMessageId(e.Message);
 
-            //Kontakt unbekannt? Neu erstellen!
-            if (contactId == 0)
-            {
-                Tab_Contact.InsertNewContact(e.Reciever, e.Message);
-                contactId = MelBoxSql.Tab_Contact.SelectContactId(e.Reciever);
-            }
+            ////Kontakt unbekannt? Neu erstellen!
+            //if (contactId == 0)
+            //{
+            //    Tab_Contact.InsertNewContact(e.Reciever, e.Message);
+            //    contactId = MelBoxSql.Tab_Contact.SelectContactId(e.Reciever);
+            //}
+
+            int gsmSendStatus = e.SendStatus; //<st> 0-31 erfolgreich versandt; 32-63 versucht weiter zu senden: 64-127 Sendeversuch abgebrochen
+            Tab_Sent.Confirmation confirmation = Tab_Sent.Confirmation.Unknown;
+
+            if (gsmSendStatus > 127)
+                confirmation = Tab_Sent.Confirmation.AwaitingRefernece;
+            else if (gsmSendStatus > 63)
+                confirmation = Tab_Sent.Confirmation.AbortedSending;
+            else if (gsmSendStatus > 31)
+                confirmation = Tab_Sent.Confirmation.RetrySending;
+            else if (gsmSendStatus >= 0)
+                confirmation = Tab_Sent.Confirmation.SentSuccessful;
+
 
             //Sendebestätigung in Datenbank schreiben
-            MelBoxSql.Sent set = new MelBoxSql.Sent(contactId, contentId, MelBoxSql.Tab_Contact.Communication.Sms)
-            {
-                Confirmation = e.SendStatus,
-                SentTime = e.DischargeTimeUtc                
-            };
-            
-            Console.WriteLine("Gsm_StatusReportRecievedEvent(): Statusreport für Referrenz " + e.InternalReference);
-
-            MelBoxSql.Sent where = new MelBoxSql.Sent()
-            {
-                Reference = e.InternalReference
-            };
-
-            if (! MelBoxSql.Tab_Sent.Update(set, where) )
+            if (!MelBoxSql.Tab_Sent.UpdateSendStatus(e.InternalReference, confirmation))
             {
                 Console.WriteLine("Gsm_StatusReportRecievedEvent(): Statusreport für Referrenz " + e.InternalReference + " konnte keiner gesendeten SMS zugeordnet werden.");
             }
@@ -157,7 +157,7 @@ namespace MelBoxCore
                 {
                     Sent sent = new Sent(shift.ContactId, messageId, Tab_Contact.Communication.Sms)
                     {
-                        Confirmation = -1
+                        Confirmation = Tab_Sent.Confirmation.NaN
                     };
 
                     MelBoxSql.Tab_Sent.Insert(sent);
@@ -174,7 +174,9 @@ namespace MelBoxCore
             Console.ForegroundColor = ConsoleColor.Gray;
 
             int toId = MelBoxSql.Tab_Contact.SelectContactId(e.Sender);
-            int contentId = MelBoxSql.Tab_Message.SelectOrCreateMessageId(e.Message);
+
+            string msg = e.Message.ToLower().StartsWith(SmsWayValidationTrigger.ToLower()) ? SmsWayValidationTrigger : e.Message; //Bei "SmsAbruf" ist SendeText und EMpfangstect verschieden.
+            int contentId = MelBoxSql.Tab_Message.SelectOrCreateMessageId(msg);
 
             //Kontakt unbekannt? Neu erstellen!
             if (toId == 0)
@@ -186,7 +188,7 @@ namespace MelBoxCore
             //'SMS gesendet' in Datenbank schreiben
             MelBoxSql.Sent sent = new MelBoxSql.Sent(toId, contentId, MelBoxSql.Tab_Contact.Communication.Sms);
             sent.Reference = e.InternalReference;
-            sent.Confirmation = 255;
+            sent.Confirmation = Tab_Sent.Confirmation.AwaitingRefernece;
             sent.SentTime = e.TimeUtc;
             
             MelBoxSql.Tab_Sent.Insert(sent);

@@ -29,7 +29,7 @@ namespace MelBoxSql
             if (sent.ToId > 0) set.Add(nameof(sent.ToId), sent.ToId);
             if (sent.ContentId > 0) set.Add(nameof(sent.ContentId), sent.ContentId);
             if (sent.Reference > 0) set.Add(nameof(sent.Reference), sent.Reference);
-            if (sent.Confirmation >= 0) set.Add(nameof(sent.Confirmation), sent.Confirmation);
+            if (sent.Confirmation != Confirmation.NaN) set.Add(nameof(sent.Confirmation), sent.Confirmation);
 
             return set;
         }
@@ -62,6 +62,16 @@ namespace MelBoxSql
             return Sql.Insert(TableName, ToDictionary(sent));
         }
 
+        public static bool UpdateSendStatus(int internalReference, Tab_Sent.Confirmation confirmation)
+        {
+            const string query = "UPDATE Sent SET Confirmation = @Confirmation WHERE Id IN ( SELECT Id FROM Sent WHERE Reference = @Reference ORDER BY Id DESC LIMIT 1 ); ";
+
+            Dictionary<string, object> args = new Dictionary<string, object>();
+            args.Add("@Confirmation", confirmation);
+            args.Add("@Reference", internalReference);
+
+            return Sql.NonQuery(query, args);
+        }
 
         public static bool Update(Sent set, Sent where)
         {
@@ -109,6 +119,6 @@ namespace MelBoxSql
 
         public int Reference { get; set; }
 
-        public int Confirmation { get; set; } = -1;
+        public Tab_Sent.Confirmation Confirmation { get; set; } = Tab_Sent.Confirmation.NaN;
     }
 }

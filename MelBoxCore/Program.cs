@@ -5,7 +5,8 @@ using MelBoxSql;
 namespace MelBoxCore
 {
     partial class Program
-    {        
+    {
+        
         static void Main()
         {
             Console.WriteLine("Progammstart.");
@@ -53,6 +54,12 @@ namespace MelBoxCore
                         if (words[1].ToLower() == "stop")
                             MelBoxWeb.Server.Stop();
                         break;
+                    case "timer":
+                        if (words[1].ToLower() == "start")
+                            MelBoxGsm.Gsm.SetTimer(true);
+                        if (words[1].ToLower() == "stop")
+                            MelBoxGsm.Gsm.SetTimer(false);
+                        break;
                     case "help":
                         ShowHelp();
                         break;
@@ -78,6 +85,8 @@ namespace MelBoxCore
             Console.WriteLine("Schreibe;*Tel.*;*Nachricht*\tSchriebt eine SMS an *Tel.*");
             Console.WriteLine("Web Start\tBedienoberfläche im Browser starten.");
             Console.WriteLine("Web Stop\tBedienoberfläche im Browser beenden.");
+            Console.WriteLine("Timer Start\tMinütliche Abfrage nach SMS/Mobilfunkverbidnung starten.");
+            Console.WriteLine("Timer Stop\tMinütliche Abfrage nach SMS/Mobilfunkverbidnung beenden.");
             Console.WriteLine("*AT-Befehl*\tFührt einen AT-Befehl aus.");
         }
     }

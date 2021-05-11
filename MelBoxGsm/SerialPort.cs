@@ -88,9 +88,9 @@ namespace MelBoxGsm
                         byte[] dst = new byte[count];
                         Buffer.BlockCopy(buffer, 0, dst, 0, count);
 
-                        Console.ForegroundColor = ConsoleColor.DarkGray;
-                        Console.WriteLine( System.Text.Encoding.UTF8.GetString(dst) );
-                        Console.ForegroundColor = ConsoleColor.Gray;
+                        //Console.ForegroundColor = ConsoleColor.DarkGray;
+                        //Console.WriteLine( System.Text.Encoding.UTF8.GetString(dst) );
+                        //Console.ForegroundColor = ConsoleColor.Gray;
 
                         OnDataReceived(dst);
                     }

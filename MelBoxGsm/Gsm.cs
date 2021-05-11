@@ -60,7 +60,7 @@ namespace MelBoxGsm
 
             Console.ForegroundColor = ConsoleColor.Green;
             //Console.WriteLine(input.Replace("\r", "\\r\r").Replace("\n", "\\n\n"));
-            Console.WriteLine(input);
+            Console.WriteLine(input.Replace(Environment.NewLine, string.Empty));
             Console.ForegroundColor = ConsoleColor.Gray;
 
             if (input.Contains(Answer_SmsRead))

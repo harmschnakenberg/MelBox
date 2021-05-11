@@ -1,4 +1,4 @@
-﻿<div id="id01" >
+﻿<div id="id01">
     <div class="w3-modal-content w3-card-4 w3-display-middle" style="max-width:600px">
 
         <div class="w3-center">
@@ -17,7 +17,7 @@
                 <label><b>Password</b></label>
                 <div class="w3-row">
                     <div class="w3-col w3-right" style="width:100px">
-                        <input name="Accesslevel" type="number" class="w3-input w3-border" value="##Accesslevel##" max="##UserAccesslevel##"  ##readonly## />
+                        <input name="Accesslevel" type="number" class="w3-input w3-border" value="##Accesslevel##" max="##UserAccesslevel##" ##readonly## />
                     </div>
                     <div class="w3-rest">
                         <input class="w3-input w3-border w3-margin-bottom" type="password" placeholder="Passwort" name="password">
@@ -32,8 +32,6 @@
                     <div class="w3-rest w3-margin-bottom">
                         <select class="w3-select w3-border " name="CompanyId" ##disabled##>
                             <option value="##CompanyId##" selected>##CompanyName##, ##CompanyCity##</option>
-                            <!--<option value="2">Option 2</option>
-                    <option value="3">Option 3</option>-->
                             ##CompanyList##
                         </select>
                     </div>
@@ -42,17 +40,25 @@
                 <label><b>Email</b></label>
                 <div class="w3-row">
                     <div class="w3-col" style="width:40px">
-                        <input name="viaEmail" type="checkbox" class="w3-check" value="##viaEmail##">
+                        <input name="viaEmail" type="checkbox" class="w3-check" ##viaEmail##>
                     </div>
                     <div class="w3-rest">
-                        <input name="email" type="email" class="w3-input w3-border w3-margin-bottom" placeholder="Emailadresse" value="##Email##" pattern="[^@\s]+@[^@\s]+">
+                        <input name="email" type="email" class="w3-input w3-border " placeholder="Emailadresse" value="##Email##" pattern="[^@\s]+@[^@\s]+">
+                    </div>
+                </div>
+                <div class="w3-row">
+                    <div class="w3-col" style="width:40px">
+                        <input name="viaAlwaysEmail" type="checkbox" class="w3-check" ##viaAlwaysEmail## ##disabled##>
+                    </div>
+                    <div class="w3-rest">
+                        <label >Immer bei eingehenden Meldungen benachrichtigen</label>
                     </div>
                 </div>
 
                 <label><b>Mobiltelefon</b></label>
                 <div class="w3-row">
                     <div class="w3-col" style="width:40px">
-                        <input name="viaPhone" type="checkbox" class="w3-check" value="##viaPhone##" />
+                        <input name="viaPhone" type="checkbox" class="w3-check" ##viaPhone## />
                     </div>
                     <div class="w3-rest">
                         <input name="phone" type="tel" class="w3-input w3-border w3-margin-bottom" placeholder="+49-421-123456789" pattern="\+[0-9,\s]+" value="##Phone##">
@@ -76,11 +82,8 @@
                     <button class="w3-button w3-block w3-teal w3-section w3-padding w3-col w3-quarter w3-margin-left  w3-right" type="submit">Speichern</button>
                 </div>
             </div>
+
+
         </form>
-
-        <!--<div class="w3-container w3-border-top w3-padding-16 w3-light-grey">
-            <button onclick="document.getElementById('id01').style.display='none'" type="button" class="w3-button w3-red">Cancel</button>            
-        </div>-->
-
     </div>
 </div>

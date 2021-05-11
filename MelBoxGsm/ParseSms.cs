@@ -48,7 +48,7 @@ namespace MelBoxGsm
         #endregion
 
         public static void Ask_SmsDelete(int index)
-        {            
+        {
             Port.WriteLine("AT+CMGD=" + index);
         }
 
@@ -91,104 +91,116 @@ namespace MelBoxGsm
                 {
                     if (msg.StartsWith("AT+CMGL")) continue; // erste Zeile
 
-                    string[] line = msg
+                    string[] lines = msg
                         .Replace("\r\n", "\n")
                         .Split('\n');
 
-                    //if (line.Length == 0) break;
-
-                    string[] header = line[0]
+                    string[] header = lines[0]
                         .Split(',');
 
                     //<index> Index
                     int.TryParse(header[(int)HeaderSms.Index], out int index);
 
-                    //<stat> Status
-                    string status = header[(int)HeaderSms.MessageStatus].Trim('"');
-
-                    //<oa>/<da> OriginatingAddress/ DestinationAddress | <fo> First Oxctet
-                    string sender = header[(int)HeaderSms.Sender].Trim('"');
-
                     //[<alpha>] PhoneBookentry für <oa>/<da> | <mr> MessageReference
                     if (int.TryParse(header[(int)HeaderStatusReport.MessageReference], out int reference))
                     {
-                        //Dies ist ein Statusreport
-
-                        //<scts> ServiceProvider TimeStamp
-                        DateTime TimeUtc = ParseUtcTime(header[(int)HeaderStatusReport.ProviderDate].Trim('"'), header[(int)HeaderStatusReport.ProviderTime].Trim('"'));
-
-                        //<dt> DischargeTime
-                        DateTime DischargeTimeUtc = ParseUtcTime(header[(int)HeaderStatusReport.DischargeDate].Trim('"'), header[(int)HeaderStatusReport.DischargeTime].Trim('"'));
-
-                        //<st> Status
-                        int.TryParse(header[(int)HeaderStatusReport.SendStatus], out int SendStatus);
-
-                        StatusReport Report = new StatusReport
-                        {
-                            RawHeader = line[0],
-                            Index = index,
-                            MessageStatus = status,
-                            ServiceCenterTimeStampTimeUtc = TimeUtc,
-                            DischargeTimeUtc = DischargeTimeUtc,
-                            InternalReference = reference,
-                            SendStatus = SendStatus
-                        };
-
-                        //if (SentSms.ContainsKey(reference))
-                        ////if (reference > 0)
-                        //{
-                        //    Report.Reciever = SentSms[reference].Item1;
-                        //    Report.Message = SentSms[reference].Item2;
-                        //    SentSms.Remove(reference);
-                        //}
-
-                        
-                        StatusReportRecievedEvent?.Invoke(null, Report);
+                        //Statusreport
+                        ParseNewStatusReport(header);
                     }
                     else
                     {
-                        //Dies ist eine SMS
-
-                        //[<alpha>] PhoneBookentry für <oa>/<da>
-                        string SenderPhoneBookEntry = header[3].Trim('"');
-
-                        //[<scts>] Service Centre Time Stamp | [<ra>] Recipient Address
-                        DateTime TimeUtc = ParseUtcTime(header[4].Trim('"'), header[5].Trim('"'));
-
-                        string messageText = string.Empty;
-
-                        for (int i = 1; i < line.Length; i++)
-                        {
-                            if (line[i] == "OK") break; //und OK-Ausgabe am Ende nicht speichern
-                            if (line[i] .Length == 0) continue; // keine Leerzeilen 
-                                messageText += line[i] + " ";
-                        }
-
-                        ParseSms sms = new ParseSms
-                        {
-                            RawHeader = line[0],
-                            Index = index,
-                            MessageStatus = status,
-                            Sender = sender,
-                            SenderPhonebookEntry = SenderPhoneBookEntry,
-                            TimeUtc = TimeUtc,
-                            Message = messageText // Sinnvoll?
-                    };
-
-
-                       // if (header.Length > 5) // Letzte werden beim MC75 nicht ausgegeben
-                       // {
-                       //     int.TryParse(header[6], out int numberTypeInt);
-
-                       //     int.TryParse(header[7], out int textLength);
-
-                       //    
-                       //     sms.MessageLength = textLength;
-                       //     sms.PhoneNumberType = numberTypeInt;
-                       //}
-
-                        SmsRecievedEvent?.Invoke(null, sms);
+                        ParseNewSms(header, lines);
                     }
+
+                    #region Löschen?
+                
+                    ////<stat> Status
+                    //string status = header[(int)HeaderSms.MessageStatus].Trim('"');
+
+                    ////<oa>/<da> OriginatingAddress/ DestinationAddress | <fo> First Oxctet
+                    //string sender = header[(int)HeaderSms.Sender].Trim('"');
+                                       
+                    //[<alpha>] PhoneBookentry für <oa>/<da> | <mr> MessageReference
+                    //if (int.TryParse(header[(int)HeaderStatusReport.MessageReference], out int reference))
+                    //{
+                    //    //Dies ist ein Statusreport
+
+                    //    //<scts> ServiceProvider TimeStamp
+                    //    DateTime TimeUtc = ParseUtcTime(header[(int)HeaderStatusReport.ProviderDate].Trim('"'), header[(int)HeaderStatusReport.ProviderTime].Trim('"'));
+
+                    //    //<dt> DischargeTime
+                    //    DateTime DischargeTimeUtc = ParseUtcTime(header[(int)HeaderStatusReport.DischargeDate].Trim('"'), header[(int)HeaderStatusReport.DischargeTime].Trim('"'));
+
+                    //    //<st> Status
+                    //    int.TryParse(header[(int)HeaderStatusReport.SendStatus], out int SendStatus);
+
+                    //    StatusReport Report = new StatusReport
+                    //    {
+                    //        RawHeader = line[0],
+                    //        Index = index,
+                    //        MessageStatus = status,
+                    //        ServiceCenterTimeStampTimeUtc = TimeUtc,
+                    //        DischargeTimeUtc = DischargeTimeUtc,
+                    //        InternalReference = reference,
+                    //        SendStatus = SendStatus
+                    //    };
+
+                    //    //if (SentSms.ContainsKey(reference))
+                    //    ////if (reference > 0)
+                    //    //{
+                    //    //    Report.Reciever = SentSms[reference].Item1;
+                    //    //    Report.Message = SentSms[reference].Item2;
+                    //    //    SentSms.Remove(reference);
+                    //    //}
+
+
+                    //    StatusReportRecievedEvent?.Invoke(null, Report);
+                    //}
+                    //else
+                    //{
+                    //    //Dies ist eine SMS
+
+                    //    //[<alpha>] PhoneBookentry für <oa>/<da>
+                    //    string SenderPhoneBookEntry = header[3].Trim('"');
+
+                    //    //[<scts>] Service Centre Time Stamp | [<ra>] Recipient Address
+                    //    DateTime TimeUtc = ParseUtcTime(header[4].Trim('"'), header[5].Trim('"'));
+
+                    //    string messageText = string.Empty;
+
+                    //    for (int i = 1; i < line.Length; i++)
+                    //    {
+                    //        if (line[i] == "OK") break; //und OK-Ausgabe am Ende nicht speichern
+                    //        if (line[i].Length == 0) continue; // keine Leerzeilen 
+                    //        messageText += line[i] + " ";
+                    //    }
+
+                    //    ParseSms sms = new ParseSms
+                    //    {
+                    //        RawHeader = line[0],
+                    //        Index = index,
+                    //        MessageStatus = status,
+                    //        Sender = sender,
+                    //        SenderPhonebookEntry = SenderPhoneBookEntry,
+                    //        TimeUtc = TimeUtc,
+                    //        Message = messageText // Sinnvoll?
+                    //    };
+
+
+                    //    // if (header.Length > 5) // Letzte werden beim MC75 nicht ausgegeben
+                    //    // {
+                    //    //     int.TryParse(header[6], out int numberTypeInt);
+
+                    //    //     int.TryParse(header[7], out int textLength);
+
+                    //    //    
+                    //    //     sms.MessageLength = textLength;
+                    //    //     sms.PhoneNumberType = numberTypeInt;
+                    //    //}
+
+                    //    SmsRecievedEvent?.Invoke(null, sms);
+                    //}
+                    #endregion
 
                     Ask_SmsDelete(index);
                 }
@@ -197,6 +209,109 @@ namespace MelBoxGsm
             {
                 throw ex;
             }
+
+        }
+
+        private static void ParseNewStatusReport(string[] header)
+        {
+            //Dies ist festgestellt als ein Statusreport
+
+            //<index> Index
+            int.TryParse(header[(int)HeaderSms.Index], out int index);
+
+            //<stat> Status
+            string status = header[(int)HeaderSms.MessageStatus].Trim('"');
+
+            //<oa>/<da> OriginatingAddress/ DestinationAddress | <fo> First Oxctet
+            string sender = header[(int)HeaderSms.Sender].Trim('"');
+
+            //[<alpha>] PhoneBookentry für <oa>/<da> | <mr> MessageReference
+            int.TryParse(header[(int)HeaderStatusReport.MessageReference], out int reference);
+
+            //<scts> ServiceProvider TimeStamp
+            DateTime TimeUtc = ParseUtcTime(header[(int)HeaderStatusReport.ProviderDate].Trim('"'), header[(int)HeaderStatusReport.ProviderTime].Trim('"'));
+
+            //<dt> DischargeTime
+            DateTime DischargeTimeUtc = ParseUtcTime(header[(int)HeaderStatusReport.DischargeDate].Trim('"'), header[(int)HeaderStatusReport.DischargeTime].Trim('"'));
+
+            //<st> Status
+            int.TryParse(header[(int)HeaderStatusReport.SendStatus], out int SendStatus);
+
+            StatusReport Report = new StatusReport
+            {
+                RawHeader = string.Join(",", header),
+                Index = index,
+                MessageStatus = status,
+                ServiceCenterTimeStampTimeUtc = TimeUtc,
+                DischargeTimeUtc = DischargeTimeUtc,
+                InternalReference = reference,
+                SendStatus = SendStatus
+            };
+
+            //if (SentSms.ContainsKey(reference))
+            ////if (reference > 0)
+            //{
+            //    Report.Reciever = SentSms[reference].Item1;
+            //    Report.Message = SentSms[reference].Item2;
+            //    SentSms.Remove(reference);
+            //}
+
+
+            StatusReportRecievedEvent?.Invoke(null, Report);
+        }
+
+        private static void ParseNewSms(string[] header, string[] line)
+        {
+            //Dies ist festgestellt als eine SMS-Nachricht
+
+            //<index> Index
+            int.TryParse(header[(int)HeaderSms.Index], out int index);
+
+            //<stat> Status
+            string status = header[(int)HeaderSms.MessageStatus].Trim('"');
+
+            //<oa>/<da> OriginatingAddress/ DestinationAddress | <fo> First Oxctet
+            string sender = header[(int)HeaderSms.Sender].Trim('"');
+
+            //[<alpha>] PhoneBookentry für <oa>/<da>
+            string SenderPhoneBookEntry = header[3].Trim('"');
+
+            //[<scts>] Service Centre Time Stamp | [<ra>] Recipient Address
+            DateTime TimeUtc = ParseUtcTime(header[4].Trim('"'), header[5].Trim('"'));
+
+            string messageText = string.Empty;
+
+            for (int i = 1; i < line.Length; i++)
+            {
+                if (line[i] == "OK") break; //und OK-Ausgabe am Ende nicht speichern
+                if (line[i].Length == 0) continue; // keine Leerzeilen 
+                messageText += line[i] + " ";
+            }
+
+            ParseSms sms = new ParseSms
+            {
+                RawHeader = line[0],
+                Index = index,
+                MessageStatus = status,
+                Sender = sender,
+                SenderPhonebookEntry = SenderPhoneBookEntry,
+                TimeUtc = TimeUtc,
+                Message = messageText // Sinnvoll?
+            };
+
+
+            // if (header.Length > 5) // Letzte werden beim MC75 nicht ausgegeben
+            // {
+            //     int.TryParse(header[6], out int numberTypeInt);
+
+            //     int.TryParse(header[7], out int textLength);
+
+            //    
+            //     sms.MessageLength = textLength;
+            //     sms.PhoneNumberType = numberTypeInt;
+            //}
+
+            SmsRecievedEvent?.Invoke(null, sms);
 
         }
 

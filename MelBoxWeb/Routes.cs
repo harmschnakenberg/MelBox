@@ -51,6 +51,7 @@ namespace MelBoxWeb
         {
             //System.Data.DataTable sent = MelBoxSql.Sql.Sent_View(DateTime.UtcNow.AddDays(-14), DateTime.UtcNow);
             System.Data.DataTable sent = MelBoxSql.Sql.Sent_View_Last(1000);
+
             string table = Html.FromTable(sent);
 
             await Server.PageAsync(context, "Ausgang", table);
@@ -385,9 +386,9 @@ namespace MelBoxWeb
 
             string alert;
             if (!Tab_Message.Update(set, id))
-                alert = Html.Alert(1, "Nachricht aktualisieren fehlgeschlagen", $"Die Nachricht {idStr}<p/>{message}<p/>konnte nicht geändert werden.");
+                alert = Html.Alert(1, "Nachricht aktualisieren fehlgeschlagen", $"Die Nachricht {idStr}<p><i>{message}</i></p> konnte nicht geändert werden.");
             else
-                alert = Html.Alert(2, "Nachricht aktualisiert", $"Änderungen für die Nachricht {idStr}<p/>{message}<p/>gespeichert.");
+                alert = Html.Alert(2, "Nachricht aktualisiert", $"Änderungen für die Nachricht {idStr}<p><i>{message}</i></p>gespeichert.");
 
             System.Data.DataTable sent = MelBoxSql.Sql.Blocked_View();
             string table = Html.FromTable(sent);
@@ -427,6 +428,10 @@ namespace MelBoxWeb
             Company company = MelBoxSql.Tab_Company.SelectCompany(account.CompanyId);
             #endregion
 
+            bool viaSms = account.Via.HasFlag(Tab_Contact.Communication.Sms);
+            bool viaEmail = account.Via.HasFlag(Tab_Contact.Communication.Email);
+            bool viaAlwaysEmail = account.Via.HasFlag(Tab_Contact.Communication.AlwaysEmail);
+
             Dictionary<string, string> pairs = new Dictionary<string, string>
             {
                 { "##readonly##", isAdmin ? string.Empty : "readonly" },
@@ -438,9 +443,10 @@ namespace MelBoxWeb
                 { "##CompanyId##", account.CompanyId.ToString() },
                 { "##CompanyName##", company.Name },
                 { "##CompanyCity##", System.Text.RegularExpressions.Regex.Replace(company.City, @"\d", "") },
-                { "##viaEmail##", account.Via.HasFlag(Tab_Contact.Communication.Email) ? "checked" : string.Empty },
+                { "##viaEmail##", viaEmail ? "checked" : string.Empty },
+                { "##viaAlwaysEmail##", viaAlwaysEmail ? "checked" : string.Empty },
                 { "##Email##", account.Email },
-                { "##viaPhone##", account.Via.HasFlag(Tab_Contact.Communication.Sms) ? "checked" : string.Empty },
+                { "##viaPhone##", viaSms ? "checked" : string.Empty },
                 { "##Phone##", "+" + account.Phone.ToString() },
                 { "##MaxInactiveHours##", account.MaxInactiveHours.ToString() },
                 { "##KeyWord##", account.KeyWord },
@@ -473,6 +479,7 @@ namespace MelBoxWeb
             payload.TryGetValue("password", out string password);
             payload.TryGetValue("CompanyId", out string CompanyIdStr);
             payload.TryGetValue("viaEmail", out string viaEmail);
+            payload.TryGetValue("viaAlwaysEmail", out string viaAlwaysEmail);
             payload.TryGetValue("email", out string email);
             payload.TryGetValue("viaPhone", out string viaPhone);
             payload.TryGetValue("phone", out string phoneStr);
@@ -513,6 +520,7 @@ namespace MelBoxWeb
             contact.Via = Tab_Contact.Communication.Unknown;
 
             if (viaEmail != null) contact.Via |= Tab_Contact.Communication.Email;
+            if (viaAlwaysEmail != null) contact.Via |= Tab_Contact.Communication.AlwaysEmail;
             if (viaPhone != null) contact.Via |= Tab_Contact.Communication.Sms;
             #endregion
 
@@ -545,6 +553,7 @@ namespace MelBoxWeb
             payload.TryGetValue("password", out string password);
             payload.TryGetValue("CompanyId", out string CompanyIdStr);
             payload.TryGetValue("viaEmail", out string viaEmail);
+            payload.TryGetValue("viaAlwaysEmail", out string viaAlwaysEmail);
             payload.TryGetValue("email", out string email);
             payload.TryGetValue("viaPhone", out string viaPhone);
             payload.TryGetValue("phone", out string phoneStr);
@@ -603,6 +612,7 @@ namespace MelBoxWeb
             set.Via = Tab_Contact.Communication.Unknown;
 
             if (viaEmail != null) set.Via |= Tab_Contact.Communication.Email;
+            if (viaAlwaysEmail != null) set.Via |= Tab_Contact.Communication.AlwaysEmail;
             if (viaPhone != null) set.Via |= Tab_Contact.Communication.Sms;
             #endregion
 

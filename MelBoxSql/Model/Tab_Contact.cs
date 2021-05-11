@@ -8,13 +8,15 @@ namespace MelBoxSql
     {
         internal const string TableName = "Contact";
       
+       // [Flags]
         public enum Communication
         {
             NaN = -1,
             Unknown = 0,
             Sms = 1,
             Email = 2,
-            SmsAndEmail = 3
+           // SmsAndEmail = 3,
+            AlwaysEmail = 4
         }
 
         private static Dictionary<string, object> ToDictionary(Contact contact)

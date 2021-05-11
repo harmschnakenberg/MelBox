@@ -91,6 +91,45 @@ namespace MelBoxWeb
                             html += "</td>";
                         }
                     }
+                    else if (dt.Columns[j].ColumnName.Contains("Sendestatus"))
+                    {
+                        html += "<td><span class='material-icons-outlined'>";
+
+                        if (int.TryParse(dt.Rows[i][j].ToString(), out int confirmation))
+                        {                            
+                            switch ((MelBoxSql.Tab_Sent.Confirmation) confirmation)
+                            {
+                                case MelBoxSql.Tab_Sent.Confirmation.NaN:
+                                case MelBoxSql.Tab_Sent.Confirmation.AbortedSending:
+                                    html += "sms_failed";
+                                    break;
+                                case MelBoxSql.Tab_Sent.Confirmation.Unknown:
+                                    html += "sms";
+                                    break;
+                                case MelBoxSql.Tab_Sent.Confirmation.AwaitingRefernece:
+                                    html += "hourglass_top";
+                                    break;
+                                case MelBoxSql.Tab_Sent.Confirmation.PendingAnswer:
+                                    html += "hourglass_bottom";
+                                    break;
+                                case MelBoxSql.Tab_Sent.Confirmation.RetrySending:
+                                    html += "try";
+                                    break; 
+                                case MelBoxSql.Tab_Sent.Confirmation.SentSuccessful:
+                                    html += "check";
+                                    break;
+                                default:
+                                    html += "device_unknown";
+                                    break;
+                            }                            
+                        }
+                        else
+                        {
+                            html += "error";
+                        }
+
+                        html += "</span></td>";
+                    }
                     else
                     {
                         html += "<td>" + dt.Rows[i][j].ToString() + "</td>";

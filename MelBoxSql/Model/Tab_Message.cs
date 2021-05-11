@@ -29,9 +29,21 @@ namespace MelBoxSql
         {
             BlockedDays blockedDays = BlockedDays.None;
 
-            if (workdays) blockedDays &= BlockedDays.Mo & BlockedDays.Di & BlockedDays.Mi & BlockedDays.Do & BlockedDays.Fr;
-            if (weekend) blockedDays &= BlockedDays.Sa & BlockedDays.So;
-            
+            if (workdays)
+            {
+                blockedDays &= BlockedDays.Mo;
+                blockedDays &= BlockedDays.Di;
+                blockedDays &= BlockedDays.Mi;
+                blockedDays &= BlockedDays.Do;
+                blockedDays &= BlockedDays.Fr;
+            }
+
+            if (weekend)
+            {
+                blockedDays &= BlockedDays.Sa;
+                blockedDays &= BlockedDays.So;
+            }
+
             return blockedDays;
         }
 
