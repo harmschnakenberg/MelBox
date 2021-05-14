@@ -42,7 +42,7 @@ namespace MelBoxSql
                     { nameof(Log.Content), "TEXT" }
                 };
 
-            return Sql.CreateTable2(TableName, columns);
+            return Sql.CreateTable(TableName, columns);
         }
 
         public static bool Insert(Log log)

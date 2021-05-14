@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Text;
 
 namespace MelBoxSql
@@ -10,7 +11,7 @@ namespace MelBoxSql
     {
         #region Datenbank-Datei
 
-        private static string _DbFolder = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        private static string _DbFolder = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
         /// <summary>
         /// Stammordner für die Datenbank
@@ -28,7 +29,7 @@ namespace MelBoxSql
             }
         }
 
-        internal static string DbPath = System.IO.Path.Combine(_DbFolder, "DB", "MelBox2.db");
+        internal static string DbPath = Path.Combine(_DbFolder, "DB", "MelBox2.db");
         private static readonly string DataSource = "Data Source=" + DbPath;
 
         #endregion
@@ -168,6 +169,33 @@ namespace MelBoxSql
 
         #endregion
 
+        #region DB-Backup
+        /// <summary>
+        /// Erstellt ein wöchentliches Backup der Datenbank, wenn dies nicht vorhanden ist.
+        /// </summary>
+        public static void DbBackup()
+        {
+            try
+            {
+                string backupPath = Path.Combine(Path.GetDirectoryName(DbPath), string.Format("MelBox2_{0}_KW{1:00}.db", DateTime.UtcNow.Year, GetIso8601WeekOfYear(DateTime.UtcNow)));
+                if (File.Exists(backupPath)) return;
+
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    // Create a full backup of the database
+                    var backup = new SqliteConnection("Data Source=" + backupPath);
+                    connection.BackupDatabase(backup);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler DbBackup()\r\n" + ex.Message);
+            }
+        }
+        #endregion
+
         #region ExtractFromTable
 
         public static List<object> GetColumn(DataTable dataTable, string columnName)
@@ -199,33 +227,8 @@ namespace MelBoxSql
         #endregion
 
         #region Basic SQL-Operations
-        //internal static bool CreateTable(string tableName, Dictionary<string, object> columns, List<string> constrains = null)
-        //{
-        //    string query = "CREATE TABLE IF NOT EXISTS " + tableName + " (";
 
-        //    foreach (var column in columns.Keys)
-        //    {
-        //        query += " \"" + column + "\" " + columns[column].ToString() + ",";
-        //    }
-
-        //    query = query.TrimEnd(',');
-
-        //    if (constrains != null)
-        //    {
-        //        foreach (var constrain in constrains)
-        //        {
-        //            query += ", " + constrain;
-        //        }
-        //    }
-
-        //    query += ");";
-
-        //    Console.WriteLine("***" + query);
-
-        //    return NonQuery(query, null);
-        //}
-
-        internal static bool CreateTable2(string tableName, Dictionary<string, string> columns, List<string> constrains = null)
+        internal static bool CreateTable(string tableName, Dictionary<string, string> columns, List<string> constrains = null)
         {
             string query = "CREATE TABLE IF NOT EXISTS " + tableName + " (";
 

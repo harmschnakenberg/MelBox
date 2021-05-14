@@ -34,7 +34,7 @@ namespace MelBoxSql
                     { nameof(Shift.End), "TEXT" }
                 };
 
-            return Sql.CreateTable2(TableName, columns);
+            return Sql.CreateTable(TableName, columns);
         }
 
         public static bool Insert(Shift shift)
@@ -146,7 +146,7 @@ namespace MelBoxSql
             }
             #endregion
 
-            string query2 = $"SELECT * FROM {TableName} WHERE CURRENT_TIMESTAMP BETWEEN {nameof(Shift.Start)} AND {nameof(Shift.End)}";
+            string query2 = $"SELECT * FROM {TableName} WHERE CURRENT_TIMESTAMP BETWEEN '{nameof(Shift.Start)}' AND '{nameof(Shift.End)}';";
             System.Data.DataTable dt2 = Sql.SelectDataTable("Eine Nacht", query2, null);
 
             List<Shift> shifts = new List<Shift>();

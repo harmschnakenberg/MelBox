@@ -29,8 +29,10 @@ namespace MelBoxGsm
             if (sendTimer == null) //Timer erstellen
             {
                 //SendSmsQueue(null, null);
-                sendTimer = new System.Timers.Timer();
-                sendTimer.Interval = 3000;
+                sendTimer = new System.Timers.Timer
+                {
+                    Interval = 3000
+                };
                 sendTimer.Elapsed += new ElapsedEventHandler(SendSmsQueue);
                 sendTimer.AutoReset = true;
                 sendTimer.Start();
@@ -103,6 +105,8 @@ namespace MelBoxGsm
         /// </summary>
         public static void SetTimer(bool set)
         {
+            if (sendTimer == null) return;
+
             sendTimer.Enabled = set;
         }
 

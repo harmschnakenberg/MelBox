@@ -10,7 +10,7 @@ namespace MelBoxWeb
 {
     public partial class Server
     {
-        private static readonly string _serverPort = PortFinder.FindNextLocalOpenPort(1234);
+        
         private static IRestServer restServer;
 
         public static int Level_Admin { get; set; } = 9000; //Benutzerverwaltung u. -Einteilung
@@ -35,6 +35,7 @@ namespace MelBoxWeb
             if (restServer != null && restServer.IsListening) return;
 
             restServer = RestServerBuilder.From<Startup>().Build();
+            //restServer = RestServerBuilder.UseDefaults().Build();
 
             restServer.AfterStarting += (s) =>
             {

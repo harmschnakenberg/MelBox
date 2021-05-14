@@ -47,16 +47,42 @@ namespace MelBoxSql
         }
 
 
+        internal static int GetIso8601WeekOfYear(DateTime time)
+        {
+            // This presumes that weeks start with Monday.
+            // Week 1 is the 1st week of the year with a Thursday in it.
+            // Seriously cheat.  If its Monday, Tuesday or Wednesday, then it'll 
+            // be the same week# as whatever Thursday, Friday or Saturday are,
+            // and we always get those right
+            DayOfWeek day = System.Globalization.CultureInfo.InvariantCulture.Calendar.GetDayOfWeek(time);
+            if (day >= DayOfWeek.Monday && day <= DayOfWeek.Wednesday)
+            {
+                time = time.AddDays(3);
+            }
+
+            // Return the week of our adjusted day
+            return System.Globalization.CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(time, System.Globalization.CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+        }
 
 
+        /// <summary>
+        /// Für Hilfstabeelle Empfangsbestätigungen (Später löschen?)
+        /// </summary>
+        /// <param name="dischargeTime"></param>
+        /// <param name="internalReference"></param>
+        /// <returns></returns>
         public static bool InsertReportProtocoll(DateTime dischargeTime, int internalReference)
         {
-            Dictionary<string, object> set = new Dictionary<string, object>();
-            set.Add("DischargeTime", dischargeTime);
-            set.Add("InternalReference", internalReference);
+            Dictionary<string, object> set = new Dictionary<string, object>
+            {
+                { "DischargeTime", dischargeTime },
+                { "InternalReference", internalReference }
+            };
 
             return Sql.Insert("Reports", set);
         }
+
+
     }
 
 }

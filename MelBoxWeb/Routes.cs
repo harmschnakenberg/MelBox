@@ -10,16 +10,16 @@ using System.Data;
 namespace MelBoxWeb
 {
     [RestResource]
-    public class MelBoxRoutes
+    public class MelBoxRoutes //static = böse
     {
         [RestRoute("Get", "/api/test")]
-        public async Task Test(IHttpContext context)
+        public static async Task Test(IHttpContext context)
         {
             await context.Response.SendResponseAsync("Successfully hit the test route!").ConfigureAwait(false);
         }
 
         [RestRoute("Get", "/gsm/quality")]
-        public async Task GsmSignalQuality(IHttpContext context)
+        public static async Task GsmSignalQuality(IHttpContext context)
         {
             StringBuilder sb = new StringBuilder("{");
             sb.Append("\"" + nameof(GsmStatus.SignalQuality) + "\":" + GsmStatus.SignalQuality + ",");
@@ -33,7 +33,7 @@ namespace MelBoxWeb
 
         #region Nachrichten
         [RestRoute("Get", "/in")]
-        public async Task InBox(IHttpContext context)
+        public static async Task InBox(IHttpContext context)
         {
             //Später per URL Beginn und Ende definierbar?
 
@@ -47,7 +47,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Get", "/out")]
-        public async Task OutBox(IHttpContext context)
+        public static async Task OutBox(IHttpContext context)
         {
             //System.Data.DataTable sent = MelBoxSql.Sql.Sent_View(DateTime.UtcNow.AddDays(-14), DateTime.UtcNow);
             System.Data.DataTable sent = MelBoxSql.Sql.Sent_View_Last(1000);
@@ -58,7 +58,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Get", "/overdue")]
-        public async Task OverdueShow(IHttpContext context)
+        public static async Task OverdueShow(IHttpContext context)
         {
             System.Data.DataTable overdue = MelBoxSql.Sql.Overdue_View();
 
@@ -81,7 +81,7 @@ namespace MelBoxWeb
 
         #region Bereitschaftszeiten
         [RestRoute("Get", "/shift")]
-        public async Task ShiftShow(IHttpContext context)
+        public static async Task ShiftShow(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
@@ -98,7 +98,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Get", "/shift/{shiftId:num}")]
-        public async Task ShiftFromId(IHttpContext context)
+        public static async Task ShiftFromId(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
             bool isAdmin = false;
@@ -113,17 +113,17 @@ namespace MelBoxWeb
 
             Shift shift = Tab_Shift.Select(shiftId);
 
-            string contactOptions = Tab_Contact.HtmlOptionContacts(Server.Level_Reciever, user.Id, isAdmin);
+            string contactOptions = Tab_Contact.HtmlOptionContacts(Server.Level_Reciever, shift.ContactId, isAdmin);
 
             Dictionary<string, string> pairs = new Dictionary<string, string>
             {
                 { "##Id##", shift.Id.ToString() },
                 { "##ContactOptions##", contactOptions },
                 { "##MinDate##", DateTime.UtcNow.Date.ToString("yyyy-MM-dd") },
-                { "##StartDate##", shift.Start.ToString("yyyy-MM-dd") },
-                { "##EndDate##", shift.End.ToString("yyyy-MM-dd") },
-                { "##StartOptions##", Tab_Shift.HtmlOptionHour(shift.Start.Hour) },
-                { "##EndOptions##", Tab_Shift.HtmlOptionHour(shift.End.Hour) },
+                { "##StartDate##", shift.Start.ToLocalTime().ToString("yyyy-MM-dd") },
+                { "##EndDate##", shift.End.ToLocalTime().ToString("yyyy-MM-dd") },
+                { "##StartOptions##", Tab_Shift.HtmlOptionHour(shift.Start.ToLocalTime().Hour) },
+                { "##EndOptions##", Tab_Shift.HtmlOptionHour(shift.End.ToLocalTime().Hour) },
                 { "##Route##", "update" }
             };
 
@@ -136,7 +136,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Get", "/shift/{shiftDate}")]
-        public async Task ShiftFromDate(IHttpContext context)
+        public static async Task ShiftFromDate(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
            
@@ -153,7 +153,7 @@ namespace MelBoxWeb
 
             Shift shift = new Shift(user.Id, shiftDate);
 
-            string contactOptions = Tab_Contact.HtmlOptionContacts(Server.Level_Reciever, user.Id, isAdmin);
+            string contactOptions = Tab_Contact.HtmlOptionContacts(Server.Level_Reciever, shift.ContactId, isAdmin);
 
             DateTime endDate = shiftDate.DayOfWeek == DayOfWeek.Monday ? shiftDate.Date.AddDays(7) : shiftDate.Date.AddDays(1);
 
@@ -182,7 +182,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Post", "/shift/new")]
-        public async Task ShiftCreate(IHttpContext context)
+        public static async Task ShiftCreate(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
@@ -230,7 +230,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Post", "/shift/update")]
-        public async Task ShiftUpdate(IHttpContext context)
+        public static async Task ShiftUpdate(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
@@ -287,7 +287,7 @@ namespace MelBoxWeb
 
         #region Gesperrte Nachrichten
         [RestRoute("Get", "/blocked/{recId:num}")]
-        public async Task InBoxBlock(IHttpContext context)
+        public static async Task InBoxBlock(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
@@ -336,7 +336,7 @@ namespace MelBoxWeb
 
 
         [RestRoute("Get", "/blocked")]
-        public async Task BlockedMessage(IHttpContext context)
+        public static async Task BlockedMessage(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
@@ -348,7 +348,7 @@ namespace MelBoxWeb
 
 
         [RestRoute("Post", "/blocked/update")]
-        public async Task BlockedMessageUpdate(IHttpContext context)
+        public static async Task BlockedMessageUpdate(IHttpContext context)
         {
             Dictionary<string, string> payload = Server.Payload(context);
 
@@ -401,7 +401,7 @@ namespace MelBoxWeb
         #region Benutzerkonto
         [RestRoute("Get", "/account")]
         [RestRoute("Get", "/account/{id:num}")]
-        public async Task AccountShow(IHttpContext context)
+        public static async Task AccountShow(IHttpContext context)
         {
             #region Anfragenden Benutzer identifizieren
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
@@ -462,7 +462,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Post", "/account/new")]
-        public async Task AccountCreate(IHttpContext context)
+        public static async Task AccountCreate(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
@@ -536,7 +536,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Post", "/account/update")]
-        public async Task AccountUpdate(IHttpContext context)
+        public static async Task AccountUpdate(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
@@ -632,7 +632,7 @@ namespace MelBoxWeb
 
         #region Firmeninformation
         [RestRoute("Get", "/company/{id:num}")]
-        public async Task CompanyShow(IHttpContext context)
+        public static async Task CompanyShow(IHttpContext context)
         {
             #region Anfragenden Firma identifizieren
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
@@ -675,7 +675,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Post", "/company/new")]
-        public async Task CompanyCreate(IHttpContext context)
+        public static async Task CompanyCreate(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
@@ -712,7 +712,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Post", "/company/update")]
-        public async Task CompanyUpdate(IHttpContext context)
+        public static async Task CompanyUpdate(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
@@ -760,7 +760,7 @@ namespace MelBoxWeb
 
         #region Benutzerverwaltung
         [RestRoute("Post", "/register")]
-        public async Task Register(IHttpContext context)
+        public static async Task Register(IHttpContext context)
         {
             Dictionary<string, string> payload = Server.Payload(context);
             payload.TryGetValue("name", out string name);
@@ -781,7 +781,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Post", "/register/thanks")]
-        public async Task RegisterProcessing(IHttpContext context)
+        public static async Task RegisterProcessing(IHttpContext context)
         {
             #region Form auslesen
             Dictionary<string, string> payload = Server.Payload(context);
@@ -850,7 +850,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Post", "/login")]
-        public async Task Login(IHttpContext context)
+        public static async Task Login(IHttpContext context)
         {
             Dictionary<string, string> payload = Server.Payload(context);
             string name = payload["name"];
@@ -879,7 +879,7 @@ namespace MelBoxWeb
         #endregion
 
         [RestRoute("Get", "/log")]
-        public async Task LoggingShow(IHttpContext context)
+        public static async Task LoggingShow(IHttpContext context)
         {
             System.Data.DataTable log = MelBoxSql.Tab_Log.SelectLast(1000);
             string table = Html.FromTable(log);
@@ -888,7 +888,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute("Get", "/gsm")]
-        public async Task ModemShow(IHttpContext context)
+        public static async Task ModemShow(IHttpContext context)
         {
             Dictionary<string, string> pairs = new Dictionary<string, string>
             {
@@ -904,7 +904,7 @@ namespace MelBoxWeb
         }
 
         [RestRoute]
-        public async Task Home(IHttpContext context)
+        public static async Task Home(IHttpContext context)
         {
             string form = Server.Page(Server.Html_FormLogin, null);
 

@@ -8,6 +8,42 @@ using System.Text;
 
 namespace MelBoxWeb
 {
+    //public class Startup
+    //{        
+    //    public IConfiguration Configuration { get; private set; }
+
+    //    private readonly string _serverPort = PortFinder.FindNextLocalOpenPort(1234);
+
+    //    public Startup(IConfiguration configuration)
+    //    {
+    //        Configuration = configuration;
+    //    }
+
+    //    public static void ConfigureServices(IServiceCollection services)
+    //    {
+    //        try
+    //        {
+    //            services.AddLogging(loggingBuilder =>
+    //            {
+    //                loggingBuilder.ClearProviders();
+    //            });
+    //        }
+    //        catch
+    //        {
+    //            Console.WriteLine("FEHLER GRAPEVINE-LOGGER");
+    //        }
+    //    }
+
+    //    public void ConfigureServer(IRestServer server)
+    //    {           
+    //        server.Prefixes.Add($"http://localhost:{_serverPort}/");
+
+    //        /* Configure Router Options (if supported by your router implementation) */
+    //        server.Router.Options.SendExceptionMessages = true;
+    //    }
+    //}
+
+
     public class Startup
     {
         public IConfiguration Configuration { get; private set; }
@@ -19,16 +55,19 @@ namespace MelBoxWeb
             Configuration = configuration;
         }
 
+#pragma warning disable CA1822 // Mark members as static
         public void ConfigureServices(IServiceCollection services)
+#pragma warning restore CA1822 // Mark members as static
         {
             services.AddLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();
+                loggingBuilder.SetMinimumLevel(LogLevel.Warning);
             });
         }
 
         public void ConfigureServer(IRestServer server)
-        {           
+        {
             server.Prefixes.Add($"http://localhost:{_serverPort}/");
 
             /* Configure Router Options (if supported by your router implementation) */

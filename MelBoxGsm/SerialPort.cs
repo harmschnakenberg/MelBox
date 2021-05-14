@@ -75,7 +75,6 @@ namespace MelBoxGsm
         {
             try
             {
-                // if (!BaseStream.CanRead) return;
                 byte[] buffer = new byte[4096];
                 Action kickoffRead = null;
                 kickoffRead = (Action)(() => BaseStream.BeginRead(buffer, 0, buffer.Length, delegate (IAsyncResult ar)
@@ -94,19 +93,11 @@ namespace MelBoxGsm
 
                         OnDataReceived(dst);
                     }
-                    catch (IndexOutOfRangeException)
-                    {
-                        //Kein Fehler erkennbar?!?
-                        Console.WriteLine("ContinuousRead(): IndexOutOfRangeException - Mal Prüfen!");
-                        //TEST
-                        //OnDataReceived(buffer); 
-                    }
-#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception exception)
                     {
                         Console.WriteLine("ContinuousRead(): Lesefehler2 COM-Port:\r\n" + exception.GetType() + Environment.NewLine + exception.Message + Environment.NewLine + exception.InnerException + Environment.NewLine + exception.Source + Environment.NewLine + exception.StackTrace);
+                        throw exception;
                     }
-#pragma warning restore CA1031 // Do not catch general exception types
 
                     kickoffRead();
                 }, null)); kickoffRead();
@@ -114,6 +105,7 @@ namespace MelBoxGsm
             catch (Exception exception)
             {
                 Console.WriteLine("ContinuousRead(): Lesefehler1 COM-Port:\r\n" + exception.GetType() + Environment.NewLine + exception.Message + Environment.NewLine + exception.InnerException + Environment.NewLine + exception.Source + Environment.NewLine + exception.StackTrace);
+                throw exception;
             }
         }
 

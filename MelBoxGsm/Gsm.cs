@@ -8,12 +8,13 @@ namespace MelBoxGsm
         private static ReliableSerialPort Port = null;
 
         public static string SerialPortName { get; set; } = SerialPort.GetPortNames()[SerialPort.GetPortNames().Length - 1];
+        public static int SerialPortBaudRate { get; set; } = 9600;
 
         private static bool Connect()
         {
             if (Port == null || !Port.IsOpen)
             {
-                Port = new ReliableSerialPort(SerialPortName, 9600, System.IO.Ports.Parity.None, 8, System.IO.Ports.StopBits.One);
+                Port = new ReliableSerialPort(SerialPortName, SerialPortBaudRate, System.IO.Ports.Parity.None, 8, System.IO.Ports.StopBits.One);
                 Port.DataReceived += ParseResponse;
                 Port.Open();
             }

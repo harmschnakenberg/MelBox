@@ -54,7 +54,7 @@ namespace MelBoxSql
                 { "CONSTRAINT fk_ContentId FOREIGN KEY (" + nameof(Sent.ContentId) + ") REFERENCES " + Tab_Message.TableName + "(Id) ON DELETE SET DEFAULT" }
             };
 
-            return Sql.CreateTable2(TableName, columns, constrains);
+            return Sql.CreateTable(TableName, columns, constrains);
         }
 
         public static bool Insert(Sent sent)
@@ -66,9 +66,11 @@ namespace MelBoxSql
         {
             const string query = "UPDATE Sent SET Confirmation = @Confirmation WHERE Id IN ( SELECT Id FROM Sent WHERE Reference = @Reference ORDER BY Id DESC LIMIT 1 ); ";
 
-            Dictionary<string, object> args = new Dictionary<string, object>();
-            args.Add("@Confirmation", confirmation);
-            args.Add("@Reference", internalReference);
+            Dictionary<string, object> args = new Dictionary<string, object>
+            {
+                { "@Confirmation", confirmation },
+                { "@Reference", internalReference }
+            };
 
             return Sql.NonQuery(query, args);
         }

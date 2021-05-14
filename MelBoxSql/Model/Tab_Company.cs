@@ -30,7 +30,7 @@ namespace MelBoxSql
                     { nameof(Company.City), "TEXT" }
                 };
 
-            return Sql.CreateTable2(TableName, columns);
+            return Sql.CreateTable(TableName, columns);
         }
 
         public static bool Insert(Company company)

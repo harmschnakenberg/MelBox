@@ -9,6 +9,7 @@ namespace MelBoxCore
         
         static void Main()
         {
+            #region Programm hochfahren
             Console.WriteLine("Progammstart.");
 
             // Auskommentieren für ohne GSM-Modem
@@ -16,19 +17,25 @@ namespace MelBoxCore
             Gsm.SmsRecievedEvent += Gsm_SmsRecievedEvent;
             Gsm.StatusReportRecievedEvent += Gsm_StatusReportRecievedEvent;
             Gsm.SmsSentEvent += Gsm_SmsSentEvent;
-            Gsm.ModemSetup("COM7");
+            Gsm.AdminPhone = 4916095285304;
             
-            //TEST: nicht erfolgreich
-            //Gsm.Ask_RelayIncomingCalls("+4942122317123");
-            //*/
+            Gsm.ModemSetup("COM7", 115200);
+            Tab_Log.Insert(Tab_Log.Topic.Startup, 3, "Programmstart");
+
+#if DEBUG
+            Console.WriteLine("Debug: Es wird keine Info-Email beim Programmstart versendet.");
+#else
+            Email.Send(new System.Net.Mail.MailAddressCollection() { Email.Admin }, DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") + " Programmstart", "Information von " + Environment.MachineName );
+#endif
 
             Console.WriteLine("Prüfe Datenbank: " + (Sql.CheckDb() ? "ok" : "Fehler") );            
             Console.WriteLine("*** STARTE WEBSERVER ***");
             MelBoxWeb.Server.Start();
+            #endregion
 
             bool run = true;
-            //string request = "AT";
-            Console.WriteLine("Lese, Schreibe, AT-Befehl:");
+
+            Console.WriteLine("Beenden mit >Exit> - Für Hilfe: >Help<");
 
             while (run)
             {
@@ -60,6 +67,15 @@ namespace MelBoxCore
                         if (words[1].ToLower() == "stop")
                             MelBoxGsm.Gsm.SetTimer(false);
                         break;
+                    case "email":
+                        Email.Send(new System.Net.Mail.MailAddressCollection() { Email.Admin }, "Test-Email von MelBox2");
+                        break;
+                    case "test2":
+                        ParseSms sms = new ParseSms();
+                        sms.Message = "Dies ist eine MelBox2-Testnachricht. Bitte ignorieren.";
+                        sms.Sender = "+4916095285304";
+                        Gsm_SmsRecievedEvent(null, sms);
+                        break;
                     case "help":
                         ShowHelp();
                         break;
@@ -73,15 +89,15 @@ namespace MelBoxCore
             Gsm.DisConnect();
             MelBoxWeb.Server.Stop();
 
-            Console.WriteLine("Beliebige Taste zum beenden...");
-            Console.ReadKey();
+            //Console.WriteLine("Beliebige Taste zum beenden...");
+            //Console.ReadKey();
         }
 
         private static void ShowHelp()
         {
             Console.WriteLine("** HILFE **");
-            Console.WriteLine("Exit\tProgramm beenden.");
-            Console.WriteLine("Lese\tliest alle im GSM-Modem gespeicherten Nachrichten.");
+            Console.WriteLine("Exit\t\tProgramm beenden.");
+            Console.WriteLine("Lese\t\tliest alle im GSM-Modem gespeicherten Nachrichten.");
             Console.WriteLine("Schreibe;*Tel.*;*Nachricht*\tSchriebt eine SMS an *Tel.*");
             Console.WriteLine("Web Start\tBedienoberfläche im Browser starten.");
             Console.WriteLine("Web Stop\tBedienoberfläche im Browser beenden.");

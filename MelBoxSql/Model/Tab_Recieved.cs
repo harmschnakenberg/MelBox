@@ -13,7 +13,7 @@ namespace MelBoxSql
             Dictionary<string, object> set = new Dictionary<string, object>();
 
             if (recieved.Id > 0) set.Add(nameof(recieved.Id), recieved.Id);
-            if (recieved.RecTime > DateTime.MinValue) set.Add(nameof(recieved.RecTime), recieved.RecTime);
+            if (recieved.RecTime > DateTime.MinValue) set.Add(nameof(recieved.RecTime), recieved.RecTime.ToString("yyyy-MM-dd HH:mm:ss"));
             if (recieved.FromId > 0) set.Add(nameof(recieved.FromId), recieved.FromId);
             if (recieved.ContentId > 0) set.Add(nameof(recieved.ContentId), recieved.ContentId);
 
@@ -36,7 +36,7 @@ namespace MelBoxSql
                 { "CONSTRAINT fk_ContentId FOREIGN KEY (" + nameof(Recieved.ContentId) + ") REFERENCES " + Tab_Message.TableName + "(Id) ON DELETE SET DEFAULT" }
             };
 
-            return Sql.CreateTable2(TableName, columns, constrains);
+            return Sql.CreateTable(TableName, columns, constrains);
         }
 
         public static bool Insert(Recieved recieved)

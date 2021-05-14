@@ -17,6 +17,8 @@ namespace MelBoxGsm
             IncomingCall
         }
 
+        public static ulong AdminPhone { get; set; } = 4916095285304;
+
         #region Event Status-Update
         public delegate void GsmStatusReceivedEventHandler(object sender, GsmStatusArgs e);
         public static event EventHandler<GsmStatusArgs> GsmStatusReceived;
@@ -33,13 +35,18 @@ namespace MelBoxGsm
 
 
         #region Abfragen
-        public static void ModemSetup(string serialPort = "")
+        public static void ModemSetup(string serialPort = "", int baudRate = 0)
         {
             string[] ports = System.IO.Ports.SerialPort.GetPortNames();
 
             if (Array.Exists(ports, p => p == serialPort))
             {
                 Gsm.SerialPortName = serialPort;
+            }
+
+            if (baudRate > 0)
+            {
+                Gsm.SerialPortBaudRate = baudRate;
             }
 
             if (Connect())
@@ -82,21 +89,24 @@ namespace MelBoxGsm
                 Write("AT+CNMI=2,1,2,2,1");
                 //erfolgreich getestet: AT+CNMI=2,1,2,2,1
 
+                //Statusänderung SIM-Schubfach melden
+                Write("AT^SCKS=1");
 
                 //Sprachanrufe:
                 //Display unsolicited result codes
                 Write("AT+CLIP=1");
 
-                //Statusänderung SIM-Schubfach melden
-                Write("AT^SCKS=1");
 
                 #region Regelmäßige Anfragen an das Modem
                 aksingTimer.Elapsed += new ElapsedEventHandler(Ask_RegularQueue);
                 aksingTimer.AutoReset = true;
                 aksingTimer.Start();
                 #endregion
-            }
 
+
+                Gsm.Ask_RelayIncomingCalls(AdminPhone);
+
+            }
         }
 
         /// <summary>
@@ -122,7 +132,7 @@ namespace MelBoxGsm
             Write("AT+CREG?");
         }
 
-        public static void Ask_RelayIncomingCalls(string phone)
+        public static void Ask_RelayIncomingCalls(ulong phone)
         {
 
             //AT+CCFC=<reason> ,  <mode> [,  <number> [,  <type> [,  <class> [,  <time> ]]]]
@@ -130,10 +140,16 @@ namespace MelBoxGsm
             // Write("AT+CCFC=0,3,\"" + phone + "\", 145");
 
             //Rufumleitung BAUSTELLE: nicht ausreichend getestet //            
-            Write("ATD*61*" + phone + "*10#;");
+            // Write("ATD*61*" + phone + "*10#;");
 
-            //Antwort ^SCCFC : <reason>, <status> (0: inaktiv, 1: aktiv), <class> [,.
-            System.Threading.Thread.Sleep(4000); //Antwort abwarten - Antwort wird nicht ausgewertet.
+            if (phone > 0)
+            {
+                Write($"**61*+{phone}*11*05#");
+                Console.WriteLine("Sprachanrufe werden umgeleitet an +" + phone);
+
+                //Antwort ^SCCFC : <reason>, <status> (0: inaktiv, 1: aktiv), <class> [,.
+                System.Threading.Thread.Sleep(4000); //Antwort abwarten - Antwort wird nicht ausgewertet.
+            }
         }
         #endregion
 

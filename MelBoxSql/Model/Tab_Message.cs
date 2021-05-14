@@ -4,7 +4,7 @@ using System.Text;
 
 namespace MelBoxSql
 {
-    public class Tab_Message
+    public static class Tab_Message
     {
         internal const string TableName = "Message";
 
@@ -73,7 +73,7 @@ namespace MelBoxSql
                     { nameof(Message.EndBlockHour), "INTEGER" }
                 };
 
-            return Sql.CreateTable2(TableName, columns);
+            return Sql.CreateTable(TableName, columns);
         }
 
         public static bool Insert(Message message)
@@ -177,6 +177,61 @@ namespace MelBoxSql
             return KeyWords;
         }
 
+        //BAUSTELLE
+        public static bool IsMessageBlockedNow(int messageId)
+        {
+            Message msg = SelectMessage(messageId);
+            Console.WriteLine($"Gesperrt? Nachricht [{messageId}] {msg.Content}");
+
+            bool blockedDay = false;
+            DayOfWeek today = DateTime.Now.DayOfWeek;
+
+            if (Tab_Shift.IsHolyday(DateTime.Now))
+            {
+                today = DayOfWeek.Sunday;
+            }
+
+            switch (today) 
+            {               
+                case DayOfWeek.Monday:
+                    if ((msg.BlockedDays & BlockedDays.Mo) > 0)
+                        blockedDay = true;
+                        break;
+                case DayOfWeek.Tuesday:
+                    if ((msg.BlockedDays & BlockedDays.Di) > 0)
+                        blockedDay = true;
+                    break;
+                case DayOfWeek.Wednesday:
+                    if ((msg.BlockedDays & BlockedDays.Mi) > 0)
+                        blockedDay = true;
+                    break;
+                case DayOfWeek.Thursday:
+                    if ((msg.BlockedDays & BlockedDays.Do) > 0)
+                        blockedDay = true;
+                    break;
+                case DayOfWeek.Friday:
+                    if ((msg.BlockedDays & BlockedDays.Fr) > 0)
+                        blockedDay = true;
+                    break;
+                case DayOfWeek.Saturday:
+                    if ((msg.BlockedDays & BlockedDays.Sa) > 0)
+                        blockedDay = true;
+                    break;
+                case DayOfWeek.Sunday:
+                    if ((msg.BlockedDays & BlockedDays.So) > 0)
+                        blockedDay = true;
+                    break;                
+            }
+
+            if (blockedDay)
+            {
+                //jetzt 13 --> 17 bis 7
+                if (msg.StartBlockHour >= DateTime.Now.Hour || (msg.EndBlockHour > 0 && msg.EndBlockHour < DateTime.Now.Hour) )
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     public class Message

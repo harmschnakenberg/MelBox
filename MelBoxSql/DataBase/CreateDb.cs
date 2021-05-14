@@ -198,9 +198,11 @@ namespace MelBoxSql
                 
                 Tab_Recieved.CreateTable();
 
-                Recieved recieved1 = new Recieved(1, 1);
-                recieved1.RecTime = DateTime.UtcNow;
-       
+                Recieved recieved1 = new Recieved(1, 1)
+                {
+                    RecTime = DateTime.UtcNow
+                };
+
                 Tab_Recieved.Insert(recieved1);
 
                 #endregion
@@ -209,8 +211,10 @@ namespace MelBoxSql
 
                 Tab_Sent.CreateTable();
 
-                Sent sent1 = new Sent(1, 1, Tab_Contact.Communication.Unknown);
-                sent1.SentTime = DateTime.UtcNow;
+                Sent sent1 = new Sent(1, 1, Tab_Contact.Communication.Unknown)
+                {
+                    SentTime = DateTime.UtcNow
+                };
 
                 Tab_Sent.Insert(sent1);
 
@@ -236,7 +240,7 @@ namespace MelBoxSql
                     { "InternalReference", "INTEGER" }
                 };
 
-                Sql.CreateTable2("Reports", columns);
+                Sql.CreateTable("Reports", columns);
 
                 #endregion
 
@@ -247,6 +251,8 @@ namespace MelBoxSql
             }
         }
 
+
+      
     }
 
 }

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace MelBoxSql
 {
-    public class Tab_Contact
+    public static class Tab_Contact
     {
         internal const string TableName = "Contact";
       
@@ -60,7 +60,7 @@ namespace MelBoxSql
                 { "CONSTRAINT fk_CompanyId FOREIGN KEY (" + nameof(Contact.CompanyId) + ") REFERENCES " + Tab_Company.TableName + "(Id) ON DELETE SET NULL" }
             };
 
-            return Sql.CreateTable2(TableName, columns, constrains);
+            return Sql.CreateTable(TableName, columns, constrains);
         }
 
         public static bool Insert(Contact contact)
@@ -71,13 +71,15 @@ namespace MelBoxSql
 
         public static bool InsertNewContact(string phone, string message)
         {
-            Contact contact = new Contact();
-            contact.Accesslevel = 0;
-            contact.EntryTime = DateTime.UtcNow;
-            contact.KeyWord = Tab_Message.ExtractKeyWord(message);
+            Contact contact = new Contact
+            {
+                Accesslevel = 0,
+                EntryTime = DateTime.UtcNow,
+                KeyWord = Tab_Message.ExtractKeyWord(message),
+                CompanyId = 1 // ohne Zuordnung aufgrund SELECT-Anweisung keine Darstellung in Weboberfläche.
+            };
             contact.Name = $"NeuerBenutzer '{contact.KeyWord}' vom {contact.EntryTime.ToShortDateString()}";
-            contact.CompanyId = 1; // ohne Zuordnung aufgrund SELECT-Anweisung keine Darstellung in Weboberfläche.
-
+          
             if (ulong.TryParse(phone.Trim('+'), out ulong _phone))
                 contact.Phone = _phone;
 
@@ -199,6 +201,16 @@ namespace MelBoxSql
             return Sql.SelectDataTable("Überwachte Kontakte", query, null);
         }
 
+        public static System.Data.DataTable SelectPermanentEmailRecievers()
+        {
+            string query = "SELECT Email, Name " +
+                " FROM " + TableName +
+                " WHERE Email LIKE '%@%' AND Via IN (4, 5, 6)" +
+                " ; ";
+
+           return Sql.SelectDataTable("Ständige EMpfänger", query, null);
+        }
+
 
         #region Hilfs-Methoden zu Kontakten
 
@@ -209,7 +221,7 @@ namespace MelBoxSql
             return System.Text.Encoding.UTF8.GetString(data);
         }
 
-        internal static bool IsEmail(string mailAddress)
+        public static bool IsEmail(string mailAddress)
         {
             System.Text.RegularExpressions.Regex mailIDPattern = new System.Text.RegularExpressions.Regex(@"[\w-]+@([\w-]+\.)+[\w-]+");
 
