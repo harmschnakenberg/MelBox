@@ -211,10 +211,18 @@ namespace MelBoxSql
            return Sql.SelectDataTable("Ständige EMpfänger", query, null);
         }
 
+        public static string SelectName_Company_City(int contactId)
+        {
+            Contact contact = SelectContact(contactId);
+
+            Company company = Tab_Company.SelectCompany(contact.CompanyId);
+
+            return $"{contact.Name}, {company.Name}, {System.Text.RegularExpressions.Regex.Replace(company.City, @"\d", "")}";
+        }
 
         #region Hilfs-Methoden zu Kontakten
 
-        public static string Encrypt(string password)
+            public static string Encrypt(string password)
         {
             byte[] data = System.Text.Encoding.UTF8.GetBytes(password);
             data = new System.Security.Cryptography.SHA256Managed().ComputeHash(data);

@@ -1,9 +1,7 @@
 ﻿using MelBoxGsm;
-using MelBoxWeb;
 using MelBoxSql;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Net.Mail;
 
 namespace MelBoxCore
@@ -13,15 +11,18 @@ namespace MelBoxCore
 
         #region Properties
         public static string SmsWayValidationTrigger { get; set; } = "SMSAbruf";
+
         #endregion
 
         private static void Gsm_GsmStatusReceived(object sender, GsmStatusArgs e)
         {
-
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine(e.Property + ":\r\n" + e.Value);
+            if ((Gsm.Debug & (int)Gsm.DebugCategory.GsmStatus) > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkCyan;
+                Console.WriteLine(e.Property + ":\t" + e.Value);
                 Console.ForegroundColor = ConsoleColor.Gray;
-            
+            }
+
             switch (e.Property)
             {
                 case Gsm.Modem.SignalQuality:
@@ -48,7 +49,9 @@ namespace MelBoxCore
                     MelBoxWeb.GsmStatus.ProviderName = e.Value.ToString();
                     break;
                 case Gsm.Modem.IncomingCall:
-                    MelBoxSql.Tab_Log.Insert(MelBoxSql.Tab_Log.Topic.Gsm, 2, "Eingehender Anruf von " + e.Value);
+                    string call = "Eingehender Sprachanruf von " + e.Value;
+                    MelBoxSql.Tab_Log.Insert(MelBoxSql.Tab_Log.Topic.Gsm, 2, call);
+                    Console.WriteLine(DateTime.Now + "\t" + call);
                     break;
                 default:
                     break;
@@ -57,11 +60,11 @@ namespace MelBoxCore
 
         private static void Gsm_StatusReportRecievedEvent(object sender, StatusReport e)
         {
-        
-                Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.WriteLine("SMS-Sendebestätigungs-Nr. intern: " + e.InternalReference);
-                Console.ForegroundColor = ConsoleColor.Gray;
-            
+
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.WriteLine("SMS-Sendebestätigungs-Nr. intern: " + e.InternalReference);
+            Console.ForegroundColor = ConsoleColor.Gray;
+
             //TEST: In Hilfstabelle schreiben
             MelBoxSql.Sql.InsertReportProtocoll(e.DischargeTimeUtc, e.InternalReference);
 
@@ -92,14 +95,14 @@ namespace MelBoxCore
 
         private static void Gsm_SmsRecievedEvent(object sender, ParseSms e)
         {
-            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(e.Sender + ":\r\n" + e.Message);
             Console.ForegroundColor = ConsoleColor.Gray;
 
             #region SMS-Empfang in Datenbank protokollieren
             int fromId = MelBoxSql.Tab_Contact.SelectContactId(e.Sender);
 
-            if (fromId == 0 ) // Unbekannter Sender
+            if (fromId == 0) // Unbekannter Sender
             {
                 Tab_Contact.InsertNewContact(e.Sender, e.Message);
                 fromId = MelBoxSql.Tab_Contact.SelectContactId(e.Sender);
@@ -119,6 +122,7 @@ namespace MelBoxCore
 
             #region Weiterleiten per EMail oder SMS
             MailAddressCollection emailRecievers = new MailAddressCollection();
+            string emailSuffix = string.Empty;
 
             #region Meldelinientest 'SmsAbruf'
             if (e.Message.ToLower().Trim() == SmsWayValidationTrigger.ToLower())
@@ -130,19 +134,22 @@ namespace MelBoxCore
                     SentTime = DateTime.UtcNow
                 };
                 MelBoxSql.Tab_Sent.Insert(sent);
-            }            
+            }
             else
             #endregion
             {
-                //Nachricht zum jetzigen Zeitpunkt gesperrt?
+            #region Nachricht zum jetzigen Zeitpunkt gesperrt?
                 bool blocked = Tab_Message.IsMessageBlockedNow(messageId);
 
-                if (blocked) 
-                    e.Message += Environment.NewLine + "Keine Weiterleitung an Bereitschaftshandy da SMS gesperrt.";
+                
+                if (blocked)
+                    emailSuffix += Environment.NewLine + "Keine Weiterleitung an Bereitschaftshandy da SMS zur Zeit gesperrt.";
                 else
+                #endregion
                 {
+                    #region An Bereitschaft senden
                     //Bereitschaft ermitteln
-                    List<MelBoxSql.Shift> currentShifts = MelBoxSql.Tab_Shift.SelectOrCreateCurrentShift();                    
+                    List<MelBoxSql.Shift> currentShifts = MelBoxSql.Tab_Shift.SelectOrCreateCurrentShift();
                     Console.WriteLine("Aktuelle Bereitschaft: ");
 
                     //an Bereitschaft weiterleiten
@@ -180,26 +187,34 @@ namespace MelBoxCore
                     if (currentShifts.Count == 0)
                     {
                         Console.WriteLine("z.Zt. keine aktive Bereitschaft");
-                        e.Message += Environment.NewLine + "Keine Weiterleitung an Bereitschaftshandy in der Geschäftszeit.";
+                        emailSuffix += Environment.NewLine + "Keine Weiterleitung an Bereitschaftshandy in der Geschäftszeit.";
                     }
+                    else
+                    {
+                        emailSuffix += Environment.NewLine + "Weiterleitung an Bereitschaftshandy außerhalb Geschäftszeiten ist erfolgt.";
+                    }
+                    #endregion
                 }
             }
 
             //Emails an Bereitschaft und ständige Empfänger senden.
-            Email.Send(emailRecievers, e.Message);
+            string subject = $"SMS-Eingang >{MelBoxSql.Tab_Contact.SelectName_Company_City(fromId)}<, Text >{e.Message}<"; 
+            string body = $"Absender >{e.Sender}<\r\nText >{e.Message}<\r\nSendezeit >{e.TimeUtc.ToLocalTime().ToLongTimeString()}<\r\n" + emailSuffix;
+
+            Email.Send(emailRecievers, body, subject);
 
             #endregion
         }
 
         private static void Gsm_SmsSentEvent(object sender, ParseSms e)
         {
-            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.WriteLine("Versendet " + e.Sender + ":\r\n" + e.Message);
             Console.ForegroundColor = ConsoleColor.Gray;
 
             int toId = MelBoxSql.Tab_Contact.SelectContactId(e.Sender);
 
-            string msg = e.Message.ToLower().StartsWith(SmsWayValidationTrigger.ToLower()) ? SmsWayValidationTrigger : e.Message; //Bei "SmsAbruf" ist SendeText und EMpfangstect verschieden.
+            string msg = e.Message.ToLower().StartsWith(SmsWayValidationTrigger.ToLower()) ? SmsWayValidationTrigger : e.Message; //Bei "SmsAbruf" ist SendeText und Empfangstect verschieden.
             int contentId = MelBoxSql.Tab_Message.SelectOrCreateMessageId(msg);
 
             //Kontakt unbekannt? Neu erstellen!
@@ -226,6 +241,6 @@ namespace MelBoxCore
             MelBoxSql.Tab_Sent.Insert(sent);
         }
 
-    }
 
+    }
 }

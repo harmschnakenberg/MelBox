@@ -10,7 +10,9 @@ using System.Data;
 namespace MelBoxWeb
 {
     [RestResource]
+#pragma warning disable CA1052 // Static holder types should be Static or NotInheritable
     public class MelBoxRoutes //static = böse
+#pragma warning restore CA1052 // Static holder types should be Static or NotInheritable
     {
         [RestRoute("Get", "/api/test")]
         public static async Task Test(IHttpContext context)
@@ -870,6 +872,8 @@ namespace MelBoxWeb
                 System.Net.Cookie cookie = new System.Net.Cookie("MelBoxId", guid, "/");
 
                 context.Response.Cookies.Add(cookie);
+
+                MelBoxSql.Tab_Log.Insert(Tab_Log.Topic.Web, 3, $"Login Benutzer >{name}<");
             }
 
             string alert = Html.Alert(prio, titel, text);
@@ -895,7 +899,8 @@ namespace MelBoxWeb
                 { "##OwnName##", GsmStatus.OwnName },
                 { "##OwnNumber##", GsmStatus.OwnNumber },
                 { "##ServiceCenter##", GsmStatus.ServiceCenterNumber },
-                { "##ProviderName##" , GsmStatus.ProviderName }
+                { "##ProviderName##" , GsmStatus.ProviderName },
+                { "##RelayNumber##" , "+" + GsmStatus.RelayNumber.ToString() }
             };
 
             string html = Server.Page(Server.Html_FormGsm, pairs);

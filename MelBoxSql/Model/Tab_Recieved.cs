@@ -4,7 +4,7 @@ using System.Text;
 
 namespace MelBoxSql
 {
-    public class Tab_Recieved
+    public static class Tab_Recieved
     {
         internal const string TableName = "Recieved";
 

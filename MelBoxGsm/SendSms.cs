@@ -1,21 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 using System.Timers;
 
 namespace MelBoxGsm
 {
-    public partial class Gsm
+    public static partial class Gsm
     {
         #region Events
         public delegate void SmsSentEventHandler(object sender, ParseSms e);
         public static event SmsSentEventHandler SmsSentEvent;
+
+        public delegate void SmsSentFaildEventHandler(object sender, ParseSms e);
+        public static event SmsSentFaildEventHandler SmsSentFaildEvent;
         #endregion
 
         static System.Timers.Timer sendTimer = null;
         public static Queue<Tuple<string, string>> SendList = new Queue<Tuple<string,string>>();
         private static Tuple<string, string> currentSendSms = null;
+
+        public static int MaxMinutesForSending { get; set; } = 3;
+        private static readonly List<ParseSms> WaitingForStatusReport = new List<ParseSms>();
 
         /// <summary>
         /// Zu sendende SMS in der Schlange anstellen, ggf. Abarbeitung der Schlange anstoßen
@@ -60,7 +64,7 @@ namespace MelBoxGsm
             Gsm.Write("AT+CMGS=\"" + currentSendSms.Item1 + "\"\r");
             Gsm.Write(currentSendSms.Item2 + ctrlz);
 
-            Console.WriteLine("Versende SMS an {1}\r\n{2}", currentSendSms.Item1, currentSendSms.Item2);
+            Console.WriteLine("SendSmsQueue(): Versende SMS an {1}\r\n{2}", currentSendSms.Item1, currentSendSms.Item2);
         }
 
         //z.B.  +CMGS: 123
@@ -93,6 +97,11 @@ namespace MelBoxGsm
                         Message = currentSendSms.Item2 // Sinnvoll?
                     };
 
+
+                    #region Sendungsverfolgung siehe auch ParseNewStatusReport()
+                    WaitingForStatusReport.Add(sentSms);
+                    #endregion
+
                     currentSendSms = null; //Freigeben für nächste SMS
 
                     SmsSentEvent?.Invoke(null, sentSms);
@@ -105,9 +114,34 @@ namespace MelBoxGsm
         /// </summary>
         public static void SetTimer(bool set)
         {
-            if (sendTimer == null) return;
+            if (askingTimer == null) return;
 
-            sendTimer.Enabled = set;
+            if (!set && askingTimer.Enabled)
+            askingTimer.Stop();
+
+            if (set && !askingTimer.Enabled)
+                askingTimer.Start();
+        }
+
+
+        private static void CheckPendingStatusReports()
+        {
+            List<ParseSms> delete = new List<ParseSms>();
+
+            foreach (ParseSms sms in WaitingForStatusReport)
+            {
+                TimeSpan waiting = DateTime.UtcNow.Subtract(sms.TimeUtc);
+                if (waiting.TotalMinutes > MaxMinutesForSending)
+                {                    
+                    SmsSentFaildEvent?.Invoke(null, sms);
+                    delete.Add(sms);
+                }
+            }
+
+            foreach (ParseSms sms in delete)
+            {
+                WaitingForStatusReport.Remove(sms);
+            }            
         }
 
     }

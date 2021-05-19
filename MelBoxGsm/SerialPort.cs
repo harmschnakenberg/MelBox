@@ -12,6 +12,7 @@ namespace MelBoxGsm
     public class ReliableSerialPort : SerialPort
     {
 
+
         #region Connection
         public ReliableSerialPort(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits)
         {
@@ -133,35 +134,6 @@ namespace MelBoxGsm
 
         #endregion
 
-        #region alternative Read Serial Port
-
-        //private async void ContinuousReadAsync()
-        //{
-        //    byte[] buffer = await ReceiveData(); //Blockiert, bis Antwort kommt!
-        //    OnDataReceived(buffer);
-        //    ContinuousReadAsync();
-        //}
-
-        //public async Task<byte[]> ReceiveData()
-        //{
-        //    //Quelle: https://stackoverflow.com/questions/33226414/correct-implementation-of-async-serialport-read
-        //    var buffer = new byte[4096];
-        //    int readBytes = 0;
-        //    //SerialPort port = new SerialPort(/* ... */);
-        //    if (!base.IsOpen) return null;
-        //    using (System.IO.MemoryStream memoryStream = new System.IO.MemoryStream())
-        //    {
-        //        while ((readBytes = await base.BaseStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-        //        {
-        //            memoryStream.Write(buffer, 0, readBytes);
-        //        }
-
-        //        return memoryStream.ToArray();
-        //    }
-        //}
-        #endregion
-
-
         #region Write
 
         private static readonly Queue<string> RequestQueue = new Queue<string>();
@@ -194,7 +166,7 @@ namespace MelBoxGsm
             {
                 sendTimer = new Timer
                 {
-                    Interval = ReadTimeout + WriteTimeout
+                    Interval = ReadTimeout + WriteTimeout //min 100 ms nach EMpfang von Modem
                 };
                 sendTimer.Elapsed += new ElapsedEventHandler(WriteQueue);
                 sendTimer.AutoReset = true;

@@ -1,17 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using System.Timers;
 
 namespace MelBoxCore
 {
     partial class Program
     {
-        public static ulong AdminPhone { get; set; } = 4916095285304;
+      
+        public static int HourOfDailyTasks { get; set; } = 8;
 
         #region Täglicher Timer
-        static TimeSpan CalcLeftTime(int hourOfDay = 8)
+        static TimeSpan CalcLeftTime(int hourOfDay)
         {
             TimeSpan day = new TimeSpan(24, 00, 00);                        // 24 hours in a day.
             TimeSpan now = TimeSpan.Parse(DateTime.Now.ToString("HH:mm"));  // The current time in 24 hour format
@@ -25,19 +23,25 @@ namespace MelBoxCore
         }
 
 
-        public void SetDailyTimer()
+        public static void SetDailyTimer()
         {
+            TimeSpan span = CalcLeftTime(HourOfDailyTasks);
+
             Timer execute = new Timer
             {
-                Interval = CalcLeftTime().TotalMilliseconds
+                Interval = span.TotalMilliseconds
             };
             execute.Elapsed += new ElapsedEventHandler(DailyTrigger);    // Event to do your tasks.
             execute.AutoReset = false;
             execute.Start();
+
+            Console.WriteLine($"Tägliche Abfrage um {HourOfDailyTasks} Uhr (in {Math.Round(span.TotalHours,1)} Std.)");
         }
 
-        private void DailyTrigger(object sender, ElapsedEventArgs e)
+        private static void DailyTrigger(object sender, ElapsedEventArgs e)
         {
+            Console.WriteLine($"Starte jetzt tägliche Abfrage.");
+
             //1) Kontroll-SMS versenden
             MelBoxGsm.Gsm.Ask_SmsSend($"+{MelBoxGsm.Gsm.AdminPhone}", "SMS-Zentrale Routinemeldung");
 
@@ -50,7 +54,7 @@ namespace MelBoxCore
                 string company = overdue.Rows[i]["Firma"].ToString();
                 string due = overdue.Rows[i]["Fällig_seit"].ToString();
 
-                string text = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") + $" Inaktivität >{name}<, >{company}< Meldung fällig seit >{due}< Melsys vor Ort prüfen.";
+                string text = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") + $" Inaktivität >{name}<, >{company}<. Meldung fällig seit >{due}<. Melsys vor Ort prüfen.";
 
                 Email.Send(null, text, $"Inaktivität >{name}<, >{company}<");                
             }

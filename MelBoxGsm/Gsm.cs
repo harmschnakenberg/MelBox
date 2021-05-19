@@ -5,10 +5,43 @@ namespace MelBoxGsm
 {
     public partial class Gsm
     {
+        #region Debug
+        public static int Debug { get; set; } = 0;
+
+        [Flags]
+        public enum DebugCategory
+        {
+            None,
+            GsmAnswer,
+            GsmStatus
+        }
+        #endregion
+
         private static ReliableSerialPort Port = null;
+
 
         public static string SerialPortName { get; set; } = SerialPort.GetPortNames()[SerialPort.GetPortNames().Length - 1];
         public static int SerialPortBaudRate { get; set; } = 9600;
+
+        public static int SimPin { get; set; } = 0000;
+
+        #region Konstanten
+        const string ctrlz = "\u001a";
+
+        const string Answer_Signal = "+CSQ: ";
+        const string Answer_SmsRead = "+CMGL: ";
+        const string Answer_SmsSent = "+CMGS: ";
+        const string Answer_NewStatusReport = "+CDSI: ";
+        public const string Answer_NewSms = "+CMTI: ";
+        const string Answer_MyPhoneNumber = "+CNUM: ";
+        const string Answer_ServiceCenterNumber = "+CSCA: ";
+        public const string Answer_NetworkRegistration = "+CREG: ";
+        const string Answer_ProviderName = "+COPS: ";
+        const string Answer_IncomingCallInfo = "+CLIP: ";
+        public const string Answer_SimSlot = "^SCKS: ";
+        const string Answer_Pin = "+CPIN: ";
+        const string Answer_CallRelay = "+CCFC: ";
+        #endregion
 
         private static bool Connect()
         {
@@ -39,30 +72,17 @@ namespace MelBoxGsm
             Port.WriteLine(request);
         }
 
-        #region Konstanten
-        const string ctrlz = "\u001a";
-
-        const string Answer_Signal = "+CSQ: ";
-        const string Answer_SmsRead = "+CMGL: ";
-        const string Answer_SmsSent = "+CMGS: ";
-        const string Answer_NewStatusReport = "+CDSI: ";
-        public const string Answer_NewSms = "+CMTI: ";
-        const string Answer_MyPhoneNumber = "+CNUM: ";
-        const string Answer_ServiceCenterNumber = "+CSCA: ";
-        public const string Answer_NetworkRegistration = "+CREG: ";
-        const string Answer_ProviderName = "+COPS: ";
-        const string Answer_IncomingCallInfo = "+CLIP: ";
-        public const string Answer_SimSlot = "^SCKS: ";
-        #endregion
-
         static void ParseResponse(object sender, DataReceivedArgs e)
         {
             string input = e.Data;
 
-            Console.ForegroundColor = ConsoleColor.Green;
-            //Console.WriteLine(input.Replace("\r", "\\r\r").Replace("\n", "\\n\n"));
-            Console.WriteLine(input.Replace(Environment.NewLine, string.Empty));
-            Console.ForegroundColor = ConsoleColor.Gray;
+            if ((Debug & (int)DebugCategory.GsmAnswer) > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine(input.Replace(Environment.NewLine, " "));
+                //Console.WriteLine(input);
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
 
             if (input.Contains(Answer_SmsRead))
             {
@@ -95,7 +115,7 @@ namespace MelBoxGsm
                     }
 
                     //  +CLIP: <number>, <type>, , [, <alpha>][, <CLI validity>]
-                    else if (line.StartsWith(Answer_IncomingCallInfo))
+                    else if (line.Contains(Answer_IncomingCallInfo))
                     {
                         ParseIncomingCallInfo(line);
                     }
@@ -127,20 +147,19 @@ namespace MelBoxGsm
                     //  ^SCKS: <mode>,<SimStatus>'
                     else if (line.Contains(Answer_SimSlot))
                     {
-                        string[] sim = line.Replace(Answer_SimSlot, string.Empty).Split(',');
-                        
-                        if (sim[ sim.Length - 1 ].Trim() == "1")
-                        {
-                            Console.ForegroundColor = ConsoleColor.DarkYellow;
-                            Console.WriteLine("SIM-Schubfach: SIM-Karte erkannt");
-                            Console.ForegroundColor = ConsoleColor.Gray;
-                        }
-                        else
-                        {
-                            Console.ForegroundColor = ConsoleColor.DarkYellow;
-                            Console.WriteLine("SIM-Schubfach: SIM-Karte nicht erkannt");
-                            Console.ForegroundColor = ConsoleColor.Gray;
-                        }
+                        ParseISimTrayStatus(line);                        
+                    }
+
+                    // +CPIN: READY
+                    else if (line.Contains(Answer_Pin))
+                    {
+                        ParseSimPin(line);                        
+                    }
+
+                    // +CCFC: 0,1,"+4916095285304",145
+                    else if (line.Contains(Answer_CallRelay))
+                    {
+                        ParseCallRelay(line);
                     }
 
                 }

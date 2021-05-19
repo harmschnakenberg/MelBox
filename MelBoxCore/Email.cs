@@ -9,9 +9,9 @@ namespace MelBoxCore
      */
     class Email
     {       
-        public static readonly MailAddress From = new MailAddress("SMSZentrale@Kreutztraeger.de", "SMS-Zentrale");
+        public static MailAddress From = new MailAddress("SMSZentrale@Kreutztraeger.de", "SMS-Zentrale");
 
-        public static readonly MailAddress Admin = new MailAddress("harm.Schnakenberg@Kreutztraeger.de", "MelBox2 Admin");
+        public static MailAddress Admin = new MailAddress("harm.Schnakenberg@Kreutztraeger.de", "MelBox2 Admin");
 
         public static string SmtpHost { get; set; } = "kreutztraeger-de.mail.protection.outlook.com";
         public static int SmtpPort { get; set; } = 25; //587;
@@ -57,7 +57,7 @@ namespace MelBoxCore
                 foreach (var to in toList ?? new MailAddressCollection() { Admin } )
                 {
 #if DEBUG           //nur zu mir
-                    if (to.Address != Admin.Address)
+                    if (to.Address.ToLower() != Admin.Address.ToLower())
                         Console.WriteLine("Send(): Emailadresse gesperrt: " + to.Address);
                     else
 #endif
@@ -69,7 +69,7 @@ namespace MelBoxCore
                     foreach (var cc in GetPermenentRecievers() ?? new MailAddressCollection())
                     {
 #if DEBUG               //nur zu mir
-                        if (cc.Address == Admin.Address)
+                        if (cc.Address.ToLower() != Admin.Address.ToLower())
                             Console.WriteLine("Send(): Emailadresse CC gesperrt: " + cc.Address);
                         else
 #endif

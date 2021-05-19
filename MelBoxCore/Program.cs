@@ -11,13 +11,16 @@ namespace MelBoxCore
         {
             #region Programm hochfahren
             Console.WriteLine("Progammstart.");
+            Ini.ReadIni();
 
             // Auskommentieren für ohne GSM-Modem
             MelBoxGsm.Gsm.GsmStatusReceived += Gsm_GsmStatusReceived;
             Gsm.SmsRecievedEvent += Gsm_SmsRecievedEvent;
             Gsm.StatusReportRecievedEvent += Gsm_StatusReportRecievedEvent;
             Gsm.SmsSentEvent += Gsm_SmsSentEvent;
+            Gsm.SmsSentFaildEvent += Gsm_SmsSentFaildEvent;
             Gsm.AdminPhone = 4916095285304;
+            MelBoxWeb.GsmStatus.RelayNumber = Gsm.AdminPhone;
             
             Gsm.ModemSetup("COM7", 115200);
             Tab_Log.Insert(Tab_Log.Topic.Startup, 3, "Programmstart");
@@ -31,6 +34,8 @@ namespace MelBoxCore
             Console.WriteLine("Prüfe Datenbank: " + (Sql.CheckDb() ? "ok" : "Fehler") );            
             Console.WriteLine("*** STARTE WEBSERVER ***");
             MelBoxWeb.Server.Start();
+            SetDailyTimer();
+
             #endregion
 
             bool run = true;
@@ -41,7 +46,7 @@ namespace MelBoxCore
             {
                 string request = Console.ReadLine();
                 string[] words = request.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (words.Length < 0) continue;
+                if (words.Length < 1) continue;
 
                 switch (words[0].ToLower())
                 {
@@ -68,13 +73,28 @@ namespace MelBoxCore
                             MelBoxGsm.Gsm.SetTimer(false);
                         break;
                     case "email":
-                        Email.Send(new System.Net.Mail.MailAddressCollection() { Email.Admin }, "Test-Email von MelBox2");
+                        if (words[1].ToLower() == "test")
+                            Email.Send(new System.Net.Mail.MailAddressCollection() { Email.Admin }, "Test-Email von MelBox2");
                         break;
-                    case "test2":
-                        ParseSms sms = new ParseSms();
-                        sms.Message = "Dies ist eine MelBox2-Testnachricht. Bitte ignorieren.";
-                        sms.Sender = "+4916095285304";
-                        Gsm_SmsRecievedEvent(null, sms);
+                    case "sim":
+                        if (words[1].ToLower() == "sms")
+                        {
+                            Console.WriteLine("Simuliere SMS-Empfang...");
+                            ParseSms sms = new ParseSms
+                            {
+                                Message = "Dies ist eine MelBox2-Testnachricht. Bitte ignorieren.",
+                                Sender = "+4916095285304"
+                            };
+                            Gsm_SmsRecievedEvent(null, sms);
+                        }
+                        break;
+                    case "debug":
+                        if (words.Length > 1)
+                        {
+                            if (int.TryParse(words[1], out int debug))
+                                Gsm.Debug = debug;
+                            Console.WriteLine("Debug = " + Gsm.Debug); 
+                        }
                         break;
                     case "help":
                         ShowHelp();
@@ -93,12 +113,27 @@ namespace MelBoxCore
             //Console.ReadKey();
         }
 
+        private static void Gsm_SmsSentFaildEvent(object sender, ParseSms e)
+        {
+            string Text =   $"Für die SMS  >{e.InternalReference}<\r\n" +
+                            $"An >{e.Sender}<\r\n" +
+                            $"Text >{e.Message}<\r\n" +
+                            $"ist seit >{e.TimeUtc.ToLocalTime()}< keine Empfangsbestätigung eingegangen. \r\n" +
+                            $"Senden abgebrochen. Kein erneuter Sendeversuch an Empfänger.";
+
+            Email.Send(null, Text, "Senden fehlgeschlagen: " + e.Message);
+        }
+
         private static void ShowHelp()
         {
             Console.WriteLine("** HILFE **");
             Console.WriteLine("Exit\t\tProgramm beenden.");
             Console.WriteLine("Lese\t\tliest alle im GSM-Modem gespeicherten Nachrichten.");
-            Console.WriteLine("Schreibe;*Tel.*;*Nachricht*\tSchriebt eine SMS an *Tel.*");
+            Console.WriteLine("Schreibe;*Tel.*;*Nachricht*\tSchreibt eine SMS an *Tel.*");
+
+            Console.WriteLine("Email Test\tSendet eine Test-Email an den Admin.");
+            Console.WriteLine("Sim Sms\tSimuliert den Empfang einer Sms.");
+            Console.WriteLine("GSM ShowRec\tSchaltet die Anzeige der vom Modem empfangenen Pakete ein oder aus.");
             Console.WriteLine("Web Start\tBedienoberfläche im Browser starten.");
             Console.WriteLine("Web Stop\tBedienoberfläche im Browser beenden.");
             Console.WriteLine("Timer Start\tMinütliche Abfrage nach SMS/Mobilfunkverbidnung starten.");

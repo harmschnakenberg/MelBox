@@ -15,10 +15,10 @@ namespace MelBoxSql
             Dictionary<string, object> set = new Dictionary<string, object>();
 
             if (shift.Id > 0) set.Add(nameof(shift.Id), shift.Id);
-            if (shift.EntryTime != null && shift.EntryTime != DateTime.MinValue) set.Add(nameof(shift.EntryTime), shift.EntryTime);
+            if (shift.EntryTime != null && shift.EntryTime != DateTime.MinValue) set.Add(nameof(shift.EntryTime), shift.EntryTime.ToString("yyyy-MM-dd HH:mm:ss"));
             if (shift.ContactId > 0) set.Add(nameof(shift.ContactId), shift.ContactId);
-            if (shift.Start != null && shift.EntryTime != DateTime.MinValue) set.Add(nameof(shift.Start), shift.Start);
-            if (shift.End != null && shift.EntryTime != DateTime.MinValue) set.Add(nameof(shift.End), shift.End);
+            if (shift.Start != null && shift.EntryTime != DateTime.MinValue) set.Add(nameof(shift.Start), shift.Start.ToString("yyyy-MM-dd HH:mm:ss"));
+            if (shift.End != null && shift.EntryTime != DateTime.MinValue) set.Add(nameof(shift.End), shift.End.ToString("yyyy-MM-dd HH:mm:ss"));
 
             return set;
         }
@@ -139,6 +139,7 @@ namespace MelBoxSql
 
             if (dt1.Rows.Count == 0)
             {
+                Console.WriteLine("Es ist keine Bereitschaft für heute definiert. Erstelle Bereitschaft mit Standardwerten.");
                 if (!MelBoxSql.Tab_Shift.InsertDefault())
                 {
                     throw new Exception("SelectOrCreateCurrentShift(): Neue Standard-Bereitschaft konnte nicht in DB gespeichert werden.");
@@ -146,7 +147,7 @@ namespace MelBoxSql
             }
             #endregion
 
-            string query2 = $"SELECT * FROM {TableName} WHERE CURRENT_TIMESTAMP BETWEEN '{nameof(Shift.Start)}' AND '{nameof(Shift.End)}';";
+            string query2 = $"SELECT * FROM {TableName} WHERE CURRENT_TIMESTAMP BETWEEN {nameof(Shift.Start)} AND {nameof(Shift.End)};";
             System.Data.DataTable dt2 = Sql.SelectDataTable("Eine Nacht", query2, null);
 
             List<Shift> shifts = new List<Shift>();

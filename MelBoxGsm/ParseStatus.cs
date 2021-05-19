@@ -30,7 +30,7 @@ namespace MelBoxGsm
         #endregion
 
         #region Timer ; Regelmäßige Anfragen
-        static readonly Timer aksingTimer = new Timer(60000);
+        static readonly Timer askingTimer = new Timer(60000);
         #endregion
 
 
@@ -66,6 +66,8 @@ namespace MelBoxGsm
                 //Im Netzwerk Registriert?
                 Ask_NetworkRegistration();
 
+                Gsm.Ask_RelayIncomingCalls(AdminPhone);
+
                 //Modem meldet Registrierungsänderungänderung mit +CREG: <stat>
                 Write("AT+CREG=1");
 
@@ -96,16 +98,17 @@ namespace MelBoxGsm
                 //Display unsolicited result codes
                 Write("AT+CLIP=1");
 
+                //SIM-Karte gesperrt?
+                Write("AT+CPIN?");
+
+                //Abfrage Rufweiterleitung aktiv?
+                Write("AT+CCFC=0,2");
 
                 #region Regelmäßige Anfragen an das Modem
-                aksingTimer.Elapsed += new ElapsedEventHandler(Ask_RegularQueue);
-                aksingTimer.AutoReset = true;
-                aksingTimer.Start();
+                askingTimer.Elapsed += new ElapsedEventHandler(Ask_RegularQueue);
+                askingTimer.AutoReset = true;
+                askingTimer.Start();
                 #endregion
-
-
-                Gsm.Ask_RelayIncomingCalls(AdminPhone);
-
             }
         }
 
@@ -120,6 +123,8 @@ namespace MelBoxGsm
             Ask_NetworkRegistration();
             Ask_SignalQuality();
             Ask_SmsRead();
+
+            CheckPendingStatusReports();
         }
 
         public static void Ask_SignalQuality()
@@ -144,11 +149,13 @@ namespace MelBoxGsm
 
             if (phone > 0)
             {
-                Write($"**61*+{phone}*11*05#");
+                //Write($"**61*+{phone}*11*05#");
+                Write("AT+CCFC=0,3,\"" + phone + "\", 145");
                 Console.WriteLine("Sprachanrufe werden umgeleitet an +" + phone);
 
                 //Antwort ^SCCFC : <reason>, <status> (0: inaktiv, 1: aktiv), <class> [,.
-                System.Threading.Thread.Sleep(4000); //Antwort abwarten - Antwort wird nicht ausgewertet.
+                //System.Threading.Thread.Sleep(4000); //Antwort abwarten - Antwort wird nicht ausgewertet.
+                
             }
         }
         #endregion
@@ -202,8 +209,6 @@ namespace MelBoxGsm
                 OnGsmStatusReceived(Modem.BitErrorRate, ModemErrorRate);
             }
         }
-
-       
 
         //  +CNUM: "Eigne Rufnummer","+49123456789",145
         private static void ParseOwnNumber(string input)
@@ -286,6 +291,7 @@ namespace MelBoxGsm
         }
 
         //  +CLIP: <number>, <type>, , [, <alpha>][, <CLI validity>]
+        //  +CLIP: "+4942122317123",145,,,,0
         private static void ParseIncomingCallInfo(string input)
         {
             string[] items = input
@@ -305,6 +311,56 @@ namespace MelBoxGsm
             OnGsmStatusReceived(Modem.IncomingCall, phone);
         }
 
+        //  ^SCKS: <mode>,<SimStatus>'
+        private static void ParseISimTrayStatus(string input)
+        {
+            string[] sim = input.Replace(Answer_SimSlot, string.Empty).Split(',');
+
+            if (sim[sim.Length - 1].Trim() == "1")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("SIM-Schubfach: SIM-Karte erkannt");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("SIM-Schubfach: SIM-Karte nicht erkannt");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
+        }
+
+        // +CPIN: READY                         //BAUSTELLE: nicht ausreichend getestet
+        private static void ParseSimPin(string input)
+        {
+            string pinStatus = input.Replace(Answer_Pin, string.Empty).Trim();
+
+            switch (pinStatus)
+            {
+                case "READY": //PIN has already been entered. No further entry needed
+                    Console.WriteLine("SIM-Karte: PIN ok");
+                    break;
+                case "SIM PIN": // ME (Mobile Equipment) is waiting for SIM PIN1
+                    Console.WriteLine("Setze hinterlegte PIN für SIM-Karte.");
+                    Write("AT+CPIN=" + SimPin);
+                    break;
+                default:
+                    Console.WriteLine($"SIM-Karte gesperrt: >{pinStatus}<");
+                    break;
+            }
+        }
+
+        // +CCFC: 0,1,"+4916095285304",145
+        private static void ParseCallRelay(string input)
+        {
+            string[] items = input.Replace(Answer_CallRelay, string.Empty).Split(',');
+
+            if (items.Length > 2 && "1" == items[1]) //Weiterleitung Sprachanrufe
+            {
+                string status = ("1" == items[0]) ? "aktiviert" : "deaktiviert";
+                Console.WriteLine($"Weiterleitung Sprachanrufe an {items[2].Trim('"')} {status}");
+            }
+        }
         #endregion
     }
 
