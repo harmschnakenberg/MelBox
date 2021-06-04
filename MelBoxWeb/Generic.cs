@@ -53,7 +53,7 @@ namespace MelBoxWeb
                 html += "<th>Edit</th>";
             }
 
-            int rows = dt.Rows.Count;
+            // int rows = dt.Rows.Count;
 
             for (int i = 0; i < dt.Columns.Count; i++)
                // if (rows > 370) // Große Tabellen nicht sortierbar machen, da zu rechenintensiv!                

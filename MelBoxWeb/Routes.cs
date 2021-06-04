@@ -543,7 +543,10 @@ namespace MelBoxWeb
             string alert;
 
             if (success)
+            {
                 alert = Html.Alert(3, "Neuen Kontakt gespeichert", "Der Kontakt " + name + " wurde erfolgreich neu erstellt.");
+                Tab_Log.Insert(Tab_Log.Topic.Database, 2, "Der Kontakt >" + name + "< wurde neu erstellt durch >" + user.Name + "< [" + user.Accesslevel + "]");
+            }
             else
                 alert = Html.Alert(1, "Fehler beim speichern des Kontakts", "Der Kontakt " + name + " konnte nicht in der Datenbank gespeichert werden.");
 
@@ -636,7 +639,10 @@ namespace MelBoxWeb
             string alert;
 
             if (success)
+            {
                 alert = Html.Alert(3, "Kontakt gespeichert", "Der Kontakt [" + Id + "] " + name + " wurde erfolgreich geändert.");
+                Tab_Log.Insert(Tab_Log.Topic.Database, 2, "Der Kontakt [" + Id + "] >" + name + "< wurde geändert durch >" + user.Name + "< [" + user.Accesslevel + "]");
+            }
             else
                 alert = Html.Alert(1, "Fehler beim speichern des Kontakts", "Der Kontakt [" + Id + "] " + name + " konnte in der Datenbank nicht geändert werden.");
 
@@ -719,7 +725,10 @@ namespace MelBoxWeb
             string alert;
 
             if (success)
+            {
                 alert = Html.Alert(3, "Neue Firmeninformation gespeichert", "Die Firmeninformation " + name + " wurde erfolgreich neu erstellt.");
+                Tab_Log.Insert(Tab_Log.Topic.Database, 2, "Firmeninformation >" + name + "< wurde neu erstellt durch >" + user.Name + "< [" + user.Accesslevel + "]");
+            }
             else
                 alert = Html.Alert(1, "Fehler beim speichern der Firmeninformation", "Die Firmeninformation zu " + name + " konnte nicht in der Datenbank gespeichert werden.");
 
@@ -764,7 +773,10 @@ namespace MelBoxWeb
             string alert;
 
             if (success)
+            {
                 alert = Html.Alert(3, "Firmeninformation gespeichert", "Die Firmeninformation [" + Id + "] " + name + " wurde erfolgreich geändert.");
+                Tab_Log.Insert(Tab_Log.Topic.Database, 2, "Firmeninformation [" + Id + "] >" + name + "< wurde geändert durch >" + user.Name + "< [" + user.Accesslevel + "]");
+            }
             else
                 alert = Html.Alert(1, "Fehler beim speichern der Firmeninformation", "Die Firmeninformation zu [" + Id + "] " + name + " konnte in der Datenbank nicht geändert werden.");
 
