@@ -128,7 +128,7 @@ namespace MelBoxSql
                     Id = 2,
                     Name = "Bereitschaftshandy",
                     Password = Tab_Contact.Encrypt("7307"),
-                    Accesslevel = 1000,
+                    Accesslevel = 2000,
                     CompanyId = 1,
                     Email = "bereitschaftshandy@kreutztraeger.de",
                     Phone = 491728362586,
@@ -224,7 +224,7 @@ namespace MelBoxSql
 
                 Tab_Shift.CreateTable();
 
-                Shift shift1 = new Shift(1, DateTime.UtcNow);
+                Shift shift1 = new Shift(1, DateTime.Now);
                 Tab_Shift.Insert(shift1);
 
                 #endregion

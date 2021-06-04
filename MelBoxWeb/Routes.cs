@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using MelBoxSql;
 using System.Data;
 
@@ -50,11 +49,11 @@ namespace MelBoxWeb
 
         [RestRoute("Get", "/out")]
         public static async Task OutBox(IHttpContext context)
-        {
-            //System.Data.DataTable sent = MelBoxSql.Sql.Sent_View(DateTime.UtcNow.AddDays(-14), DateTime.UtcNow);
-            System.Data.DataTable sent = MelBoxSql.Sql.Sent_View_Last(1000);
+        {            
+            System.Data.DataTable sent = MelBoxSql.Sql.Sent_View_Last(100);
 
-            string table = Html.FromTable(sent);
+            string table = Html.DropdownExplanation();
+            table += Html.FromTable(sent);
 
             await Server.PageAsync(context, "Ausgang", table);
         }
@@ -170,8 +169,8 @@ namespace MelBoxWeb
                 { "##MinDate##", DateTime.UtcNow.Date.ToString("yyyy-MM-dd") },
                 { "##StartDate##", shiftDate.Date.ToString("yyyy-MM-dd") },
                 { "##EndDate##", endDate.ToString("yyyy-MM-dd") },
-                { "##StartOptions##", Tab_Shift.HtmlOptionHour(shift.Start.Hour) },
-                { "##EndOptions##", Tab_Shift.HtmlOptionHour(shift.End.Hour) },
+                { "##StartOptions##", Tab_Shift.HtmlOptionHour(shift.Start.ToLocalTime().Hour) },
+                { "##EndOptions##", Tab_Shift.HtmlOptionHour(shift.End.ToLocalTime().Hour) },
                 { "##Route##", "new" }
             };
 
@@ -271,13 +270,21 @@ namespace MelBoxWeb
             Shift set = new Shift(shiftContactId, start.ToUniversalTime(), end.ToUniversalTime());
             Shift where = new Shift() { Id = shiftId };
 
-            bool success = MelBoxSql.Tab_Shift.Update(set, where);
-            string alert;
+            string alert = string.Empty;
+            double shiftHours = (endDate.Date - startDate.Date).TotalHours;
 
-            if (success)
-                alert = Html.Alert(3, "Bereitschaft geändert", $"Die Bereitschaft Nr. {shiftId} von {start.ToShortDateString()} bis {end.ToShortDateString()}  wurde erfolgreich geändert.");
+            if (shiftHours > 0)
+            {
+                if (MelBoxSql.Tab_Shift.Update(set, where))
+                    alert = Html.Alert(3, "Bereitschaft geändert", $"Die Bereitschaft Nr. {shiftId} von {start.ToShortDateString()} bis {end.ToShortDateString()}  wurde erfolgreich geändert.");
+                else
+                    alert = Html.Alert(1, "Fehler beim Ändern der Bereitschaft", "Die Bereitschaft konnte nicht in der Datenbank gespeichert werden.");
+            }
             else
-                alert = Html.Alert(1, "Fehler beim Ändern der Bereitschaft", "Die Bereitschaft konnte nicht in der Datenbank gespeichert werden.");
+            {
+                if( MelBoxSql.Tab_Shift.Delete(where))
+                    alert = Html.Alert(1, "Bereitschaft gelöscht", $"Die Bereitschaft Nr. {shiftId} von {start.ToShortDateString()} bis {end.ToShortDateString()} wurde gelöscht.");
+            }
 
             DataTable dt = Sql.Shift_View();
             string table = Html.FromShiftTable(dt, user);
@@ -305,7 +312,7 @@ namespace MelBoxWeb
             MelBoxSql.Recieved recieved = MelBoxSql.Tab_Recieved.SelectRecieved(recId);
             MelBoxSql.Contact contact = MelBoxSql.Tab_Contact.SelectContact(recieved.FromId);
             MelBoxSql.Company company = MelBoxSql.Tab_Company.SelectCompany(contact.CompanyId);
-            MelBoxSql.Message message = MelBoxSql.Tab_Message.SelectMessage(recieved.ContentId);
+            MelBoxSql.Message message = MelBoxSql.Tab_Message.SelectMessage(recId);
 
             bool mo = message.BlockedDays.HasFlag(MelBoxSql.Tab_Message.BlockedDays.Mo);
             bool tu = message.BlockedDays.HasFlag(MelBoxSql.Tab_Message.BlockedDays.Di);
@@ -433,6 +440,11 @@ namespace MelBoxWeb
             bool viaSms = account.Via.HasFlag(Tab_Contact.Communication.Sms);
             bool viaEmail = account.Via.HasFlag(Tab_Contact.Communication.Email);
             bool viaAlwaysEmail = account.Via.HasFlag(Tab_Contact.Communication.AlwaysEmail);
+            
+            string userRole = "Aspirant";
+            if (account.Accesslevel >= Server.Level_Admin) userRole = "Admin";
+            else if (account.Accesslevel >= Server.Level_Reciever) userRole = "Benutzer";
+            else if (account.Accesslevel > 0) userRole = "Beobachter";
 
             Dictionary<string, string> pairs = new Dictionary<string, string>
             {
@@ -441,6 +453,7 @@ namespace MelBoxWeb
                 { "##Id##", account.Id.ToString() },
                 { "##Name##", account.Name },
                 { "##Accesslevel##", account.Accesslevel.ToString() },
+                { "##UserRole##", userRole },                
                 { "##UserAccesslevel##", user.Accesslevel.ToString() },
                 { "##CompanyId##", account.CompanyId.ToString() },
                 { "##CompanyName##", company.Name },
@@ -836,14 +849,15 @@ namespace MelBoxWeb
             if (viaPhone != null) contact.Via |= Tab_Contact.Communication.Sms;
             #endregion
 
-
-
             bool success = MelBoxSql.Tab_Contact.Insert(contact);
 
             string alert;
 
             if (success)
-                alert = Html.Alert(3, "Erfolgreich registriert", "Willkommen " + name + "!<br/> Die Registrierung muss noch durch einen Administrator bestätigt werden, bevor Sie sich einloggen können. Informieren Sie einen Administrator.");
+            {
+                alert = Html.Alert(3, $"Erfolgreich registriert", $"Willkommen {name}!<br/> Die Registrierung muss noch durch einen Administrator bestätigt werden, bevor Sie sich einloggen können. Informieren Sie einen Administrator.");
+                Tab_Log.Insert(Tab_Log.Topic.Database, 2, $"Neuer Benutzer >{name}< im Web-Portal registriert.");
+            }
             else
                 alert = Html.Alert(1, "Registrierung fehlgeschlagen", "Es ist ein Fehler bei der Registrierung aufgetreten. Wenden Sie sich an den Administrator.");
 
@@ -861,7 +875,7 @@ namespace MelBoxWeb
 
             int prio = 1;
             string titel = "Login fehlgeschlagen";
-            string text = "Benutzername und Passwort prüfen." + @"<a href='/' class='w3-bar-item w3-button w3-teal w3-margin'>Nochmal</a>";
+            string text = "Benutzername und Passwort prüfen.<br/>Neue Benutzer müssen freigeschaltet sein.<br/>" + @"<a href='/' class='w3-bar-item w3-button w3-teal w3-margin'>Nochmal</a>";
 
             if (guid.Length > 0)
             {
@@ -900,7 +914,8 @@ namespace MelBoxWeb
                 { "##OwnNumber##", GsmStatus.OwnNumber },
                 { "##ServiceCenter##", GsmStatus.ServiceCenterNumber },
                 { "##ProviderName##" , GsmStatus.ProviderName },
-                { "##RelayNumber##" , "+" + GsmStatus.RelayNumber.ToString() }
+                { "##RelayNumber##" , "+" + GsmStatus.RelayNumber.ToString() },
+                { "##PinStatus##" , GsmStatus.PinStatus }
             };
 
             string html = Server.Page(Server.Html_FormGsm, pairs);

@@ -6,6 +6,8 @@ namespace MelBoxSql
 {
     public partial class Sql    
     {
+        public static int MaxSelectedRows { get; set; } = 1000;
+
         public static System.Data.DataTable Recieved_View(DateTime start, DateTime end, string recFrom = "", string content = "")
         {
             string query = "SELECT Nr, datetime(Empfangen, 'localtime') AS Empfangen, Von, Inhalt FROM " + Recieved_ViewName +

@@ -9,6 +9,11 @@ namespace MelBoxSql
         internal const string TableName = "Shift";
 
         public static int DefaultShiftContactId { get; set; } = 2; //Bereitschaftshandy
+        
+        /// <summary>
+        /// Stunde Tageswechsel Bereitschaft (z.B. 8 Uhr)
+        /// </summary>
+        public static int DayStartHour { get; set; } = 8;
 
         private static Dictionary<string, object> ToDictionary(Shift shift)
         {
@@ -69,8 +74,8 @@ namespace MelBoxSql
                 {
                     ContactId = ContactId,
                     EntryTime = DateTime.UtcNow,
-                    Start = ShiftStart(s).ToUniversalTime(),
-                    End = ShiftEnd(s).ToUniversalTime()
+                    Start = ShiftStart(s),
+                    End = ShiftEnd(s)
                 };
                 s = e;
                 e = s.AddDays(1);
@@ -184,16 +189,16 @@ namespace MelBoxSql
             int hour = 17;
             DayOfWeek day = date.DayOfWeek;
             if (day == DayOfWeek.Friday) hour = 15;
-            if (day == DayOfWeek.Saturday || day == DayOfWeek.Sunday || IsHolyday(date)) hour = 7;
+            if (day == DayOfWeek.Saturday || day == DayOfWeek.Sunday || IsHolyday(date)) hour = DayStartHour;
 
-            return date.Date.AddHours(hour);
+            return date.Date.AddHours(hour).ToUniversalTime();
         }
 
         public static DateTime ShiftEnd(DateTime date)
         {
-            int hour = 7;
+            int hour = DayStartHour;
 
-            return date.Date.AddDays(1).AddHours(hour);
+            return date.Date.AddDays(1).AddHours(hour).ToUniversalTime();
         }
 
         #region Feiertage

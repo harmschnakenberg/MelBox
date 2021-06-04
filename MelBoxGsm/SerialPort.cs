@@ -87,17 +87,20 @@ namespace MelBoxGsm
                         int count = BaseStream.EndRead(ar);
                         byte[] dst = new byte[count];
                         Buffer.BlockCopy(buffer, 0, dst, 0, count);
-
-                        //Console.ForegroundColor = ConsoleColor.DarkGray;
-                        //Console.WriteLine( System.Text.Encoding.UTF8.GetString(dst) );
-                        //Console.ForegroundColor = ConsoleColor.Gray;
-
                         OnDataReceived(dst);
                     }
                     catch (Exception exception)
                     {
-                        Console.WriteLine("ContinuousRead(): Lesefehler2 COM-Port:\r\n" + exception.GetType() + Environment.NewLine + exception.Message + Environment.NewLine + exception.InnerException + Environment.NewLine + exception.Source + Environment.NewLine + exception.StackTrace);
+                        Console.WriteLine("ContinuousRead(): Lesefehler Bitstream von COM-Port:\r\n" + 
+                            ">" + buffer.ToString().Trim() + "<" + Environment.NewLine +
+                            exception.GetType() + Environment.NewLine + 
+                            exception.Message + Environment.NewLine + 
+                            exception.InnerException + Environment.NewLine + 
+                            exception.Source + Environment.NewLine + 
+                            exception.StackTrace);
+#if DEBUG
                         throw exception;
+#endif
                     }
 
                     kickoffRead();
@@ -105,8 +108,15 @@ namespace MelBoxGsm
             }
             catch (Exception exception)
             {
-                Console.WriteLine("ContinuousRead(): Lesefehler1 COM-Port:\r\n" + exception.GetType() + Environment.NewLine + exception.Message + Environment.NewLine + exception.InnerException + Environment.NewLine + exception.Source + Environment.NewLine + exception.StackTrace);
+                Console.WriteLine("ContinuousRead(): Lesefehler bei Beginn. COM-Port:\r\n" +  
+                    exception.GetType() + Environment.NewLine + 
+                    exception.Message + Environment.NewLine + 
+                    exception.InnerException + Environment.NewLine + 
+                    exception.Source + Environment.NewLine + 
+                    exception.StackTrace);
+#if DEBUG
                 throw exception;
+#endif
             }
         }
 
@@ -115,6 +125,10 @@ namespace MelBoxGsm
 
         static string recLine = string.Empty;
 
+        /// <summary>
+        /// Sammelt die vom Modem empfangenen Daten für die Weiterleitung
+        /// </summary>
+        /// <param name="data"></param>
         public virtual void OnDataReceived(byte[] data)
         {
             string rec = System.Text.Encoding.UTF8.GetString(data);
@@ -150,7 +164,12 @@ namespace MelBoxGsm
 
         private void WriteQueue(object sender, ElapsedEventArgs e)
         {
-            base.WriteLine(RequestQueue.Dequeue());
+            string request = RequestQueue.Dequeue();
+            base.WriteLine(request);
+
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine(request);
+            Console.ForegroundColor = ConsoleColor.Gray;
 
             if (RequestQueue.Count == 0)
             {
@@ -166,7 +185,7 @@ namespace MelBoxGsm
             {
                 sendTimer = new Timer
                 {
-                    Interval = ReadTimeout + WriteTimeout //min 100 ms nach EMpfang von Modem
+                    Interval = ReadTimeout + WriteTimeout + 300 //min 100 ms nach Empfang von Modem
                 };
                 sendTimer.Elapsed += new ElapsedEventHandler(WriteQueue);
                 sendTimer.AutoReset = true;

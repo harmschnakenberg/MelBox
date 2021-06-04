@@ -14,10 +14,13 @@ namespace MelBoxGsm
             ServiceCenterNumber,
             NetworkRegistration,
             ProviderName,
-            IncomingCall
+            IncomingCall,
+            RelayCallEnabled,
+            PinStatus
         }
 
         public static ulong AdminPhone { get; set; } = 4916095285304;
+        public static ulong RelayCallsToPhone { get; set; } = 4916095285304;
 
         #region Event Status-Update
         public delegate void GsmStatusReceivedEventHandler(object sender, GsmStatusArgs e);
@@ -54,8 +57,13 @@ namespace MelBoxGsm
                 //Modem Type; Gewinnt Zeit, falls Modem noch nicht bereit.
                 Write("AT+CGMM");
 
+                //extended error reports
+                Write("AT+CMEE=1");
+
                 //Textmode
                 Write("AT+CMGF=1");
+                Write("AT+CMGF?");
+                //Write("AT+CSCS=\"UCS2\""); //böse! kein UCS2-Decoding implementiert!
 
                 //Signalqualität
                 Ask_SignalQuality();
@@ -65,8 +73,6 @@ namespace MelBoxGsm
 
                 //Im Netzwerk Registriert?
                 Ask_NetworkRegistration();
-
-                Gsm.Ask_RelayIncomingCalls(AdminPhone);
 
                 //Modem meldet Registrierungsänderungänderung mit +CREG: <stat>
                 Write("AT+CREG=1");
@@ -94,22 +100,27 @@ namespace MelBoxGsm
                 //Statusänderung SIM-Schubfach melden
                 Write("AT^SCKS=1");
 
-                //Sprachanrufe:
-                //Display unsolicited result codes
-                Write("AT+CLIP=1");
-
                 //SIM-Karte gesperrt?
                 Write("AT+CPIN?");
-
-                //Abfrage Rufweiterleitung aktiv?
-                Write("AT+CCFC=0,2");
 
                 #region Regelmäßige Anfragen an das Modem
                 askingTimer.Elapsed += new ElapsedEventHandler(Ask_RegularQueue);
                 askingTimer.AutoReset = true;
                 askingTimer.Start();
                 #endregion
+
+                //Sprachanrufe:
+                //Display unsolicited result codes
+                Write("AT+CLIP=1");
+
+                //Abfrage Rufweiterleitung aktiv?
+                Write("AT+CCFC=0,2");
             }
+        }
+
+        public static void Ask_DeactivateCallForewarding()
+        {
+            Write("AT+CCFC=0,0");
         }
 
         /// <summary>
@@ -154,8 +165,7 @@ namespace MelBoxGsm
                 Console.WriteLine("Sprachanrufe werden umgeleitet an +" + phone);
 
                 //Antwort ^SCCFC : <reason>, <status> (0: inaktiv, 1: aktiv), <class> [,.
-                //System.Threading.Thread.Sleep(4000); //Antwort abwarten - Antwort wird nicht ausgewertet.
-                
+                //System.Threading.Thread.Sleep(4000); //Antwort abwarten - Antwort wird nicht ausgewertet.                
             }
         }
         #endregion
@@ -170,7 +180,7 @@ namespace MelBoxGsm
 
             if (int.TryParse(items[0], out int rawSignal))
             {
-                int signalQuality = (rawSignal > 32) ? -1 : rawSignal * 100 / 32;
+                int signalQuality = (rawSignal > 30) ? -1 : rawSignal * 100 / 30;
 
                 OnGsmStatusReceived(Modem.SignalQuality, signalQuality);
             }
@@ -201,6 +211,7 @@ namespace MelBoxGsm
                     case 6:
                         ModemErrorRate = 12.8;
                         break;
+                    case 7:                        
                     default:
                         ModemErrorRate = 99;
                         break;
@@ -338,7 +349,7 @@ namespace MelBoxGsm
             switch (pinStatus)
             {
                 case "READY": //PIN has already been entered. No further entry needed
-                    Console.WriteLine("SIM-Karte: PIN ok");
+                    Console.WriteLine("SIM-Karte: PIN ok");                    
                     break;
                 case "SIM PIN": // ME (Mobile Equipment) is waiting for SIM PIN1
                     Console.WriteLine("Setze hinterlegte PIN für SIM-Karte.");
@@ -348,6 +359,8 @@ namespace MelBoxGsm
                     Console.WriteLine($"SIM-Karte gesperrt: >{pinStatus}<");
                     break;
             }
+
+            OnGsmStatusReceived(Modem.PinStatus, pinStatus.ToLower() ) ;
         }
 
         // +CCFC: 0,1,"+4916095285304",145
@@ -355,10 +368,12 @@ namespace MelBoxGsm
         {
             string[] items = input.Replace(Answer_CallRelay, string.Empty).Split(',');
 
-            if (items.Length > 2 && "1" == items[1]) //Weiterleitung Sprachanrufe
+            if (items.Length > 2 && "1" == items[1]) //1=Weiterleitung Sprachanrufe, 2=Daten, 4=Fax
             {
-                string status = ("1" == items[0]) ? "aktiviert" : "deaktiviert";
-                Console.WriteLine($"Weiterleitung Sprachanrufe an {items[2].Trim('"')} {status}");
+                bool status = "1" == items[0];
+                Console.WriteLine($"Weiterleitung Sprachanrufe an {items[2].Trim('"')} {(status ? "aktiviert" : "deaktiviert")}");
+
+                OnGsmStatusReceived(Modem.RelayCallEnabled, status);
             }
         }
         #endregion

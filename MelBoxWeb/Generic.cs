@@ -4,7 +4,7 @@ using System.Text;
 
 namespace MelBoxWeb
 {
-    public partial class Html
+    public static partial class Html
     {
         /// <summary>
         /// 'Popup'-Nachrichten
@@ -42,7 +42,9 @@ namespace MelBoxWeb
 
         internal static string FromTable(System.Data.DataTable dt, bool authorized = false, string root = "x")
         {
-            string html = "<table class='w3-table-all'>\n";
+            string html = "<p><input oninput=\"w3.filterHTML('#table1', '.item', this.value)\" class='w3-input' placeholder='Suche nach..'></p>\r\n";
+
+            html += "<table id='table1' class='w3-table-all'>\n";
             //add header row
             html += "<tr>";
             
@@ -51,15 +53,24 @@ namespace MelBoxWeb
                 html += "<th>Edit</th>";
             }
 
-            for (int i = 0; i < dt.Columns.Count; i++)
-                html += "<th>" + dt.Columns[i].ColumnName.Replace('_', ' ') + "</th>";
+            int rows = dt.Rows.Count;
 
-            html += "</tr>\n";
+            for (int i = 0; i < dt.Columns.Count; i++)
+               // if (rows > 370) // Große Tabellen nicht sortierbar machen, da zu rechenintensiv!                
+                    html += $"<th>" +
+                            $"{dt.Columns[i].ColumnName.Replace('_', ' ')}" +
+                            $"</th>";                
+                //else                
+                //    html += $"<th class='w3-hover-sand' onclick=\"w3.sortHTML('#table1', '.item', 'td:nth-child({ i + 1 })')\">" +
+                //            $"{dt.Columns[i].ColumnName.Replace('_', ' ')}" +
+                //            $"</th>";
+                
+              html += "</tr>\n";
 
             //add rows
             for (int i = 0; i < dt.Rows.Count; i++)
             {
-                html += "<tr>";
+                html += "<tr class='item'>";
 
                 if (authorized)
                 {
@@ -70,7 +81,7 @@ namespace MelBoxWeb
 
                 for (int j = 0; j < dt.Columns.Count; j++)
                 {
-                    if (dt.Columns[j].ColumnName.Contains("Gesperrt"))
+                    if (dt.Columns[j].ColumnName.StartsWith("Gesperrt"))
                     {
                         html += "<td>" + WeekDayCheckBox(
                             (MelBoxSql.Tab_Message.BlockedDays)int.Parse(
@@ -78,7 +89,7 @@ namespace MelBoxWeb
                                 )
                             ) + "</td>";
                     }
-                    else if (dt.Columns[j].ColumnName.Contains("Via"))
+                    else if (dt.Columns[j].ColumnName.StartsWith("Via"))
                     {
                         if (int.TryParse(dt.Rows[i][j].ToString(), out int via))
                         {                           
@@ -93,6 +104,7 @@ namespace MelBoxWeb
                     }
                     else if (dt.Columns[j].ColumnName.Contains("Sendestatus"))
                     {
+                       
                         html += "<td><span class='material-icons-outlined'>";
 
                         if (int.TryParse(dt.Rows[i][j].ToString(), out int confirmation))
@@ -122,13 +134,20 @@ namespace MelBoxWeb
                                     html += "device_unknown";
                                     break;
                             }                            
-                        }
+                        }                        
                         else
                         {
                             html += "error";
                         }
 
                         html += "</span></td>";
+                    }
+                    else if (dt.Columns[j].ColumnName.StartsWith("Topic"))
+                    {
+                        if(int.TryParse(dt.Rows[i][j].ToString(), out int topicNo))
+                        {
+                            html += "<td>" + ((MelBoxSql.Tab_Log.Topic) topicNo).ToString() +"</td>";
+                        }
                     }
                     else
                     {
@@ -141,11 +160,36 @@ namespace MelBoxWeb
             return html;
         }
 
+        internal static string DropdownExplanation()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("<div class='w3-dropdown-hover w3-right'>");
+            sb.AppendLine(" <button class='w3-button w3-white'>Legende</button>");
+            sb.AppendLine(" <div class='w3-dropdown-content w3-bar-block w3-border' style='right:0;width:300px;'>");
+            sb.AppendLine("  <div class='w3-bar-item w3-button'><span class='material-icons-outlined'>smartphone</span>SMS versendet</div>");
+            sb.AppendLine("  <div class='w3-bar-item w3-button'><span class='material-icons-outlined'>email</span>E-Mail versendet</div>");
+            sb.AppendLine("  <hr>");
+            sb.AppendLine("  <div class='w3-bar-item w3-button'><span class='material-icons-outlined'>check</span>Versand bestätigt</div>");
+            sb.AppendLine("  <div class='w3-bar-item w3-button'><span class='material-icons-outlined'>hourglass_top</span>erwarte interne Zuweisung</div>");
+            sb.AppendLine("  <div class='w3-bar-item w3-button'><span class='material-icons-outlined'>hourglass_bottom</span>erwarte externe Bestätigung</div>");
+            sb.AppendLine("  <div class='w3-bar-item w3-button'><span class='material-icons-outlined'>try</span>erneuter Sendeversuch</div>");
+            sb.AppendLine("  <div class='w3-bar-item w3-button'><span class='material-icons-outlined'>sms_failed</span>Senden abgebrochen</div>");
+            sb.AppendLine("  <div class='w3-bar-item w3-button'><span class='material-icons-outlined'>sms</span>Status unbekannt</div>");
+            sb.AppendLine("  <div class='w3-bar-item w3-button'><span class='material-icons-outlined'>device_unknown</span>keine Zuweisung</div>");
+            sb.AppendLine("  <div class='w3-bar-item w3-button'><span class='material-icons-outlined'>error</span>fehlerhafte Zuweisung</div>");
+            sb.AppendLine(" </div>");
+            sb.AppendLine("</div>");
+
+            return sb.ToString();
+        }
+
         internal static string FromShiftTable(System.Data.DataTable dt, MelBoxSql.Contact user)
         {
             if (user == null) return string.Empty;
 
-            string html = "<table class='w3-table w3-bordered'>\n";
+            string html = "<p><input oninput=\"w3.filterHTML('#table1', '.item', this.value)\" class='w3-input' placeholder='Suche nach..'></p>\r\n";
+
+            html += "<table class='w3-table w3-bordered'>\n";
             //add header row
             html += "<tr>";
 
@@ -174,15 +218,15 @@ namespace MelBoxWeb
                 int.TryParse(dt.Rows[i][7].ToString(), out int end);
 
                 if (holydays.Contains(date)) //Feiertag?
-                    html += "<tr class='w3-pale-red'>";                
+                    html += "<tr class='item w3-pale-red'>";                
                 else if (day == "Sa" || day == "So") //Wochenende ?              
-                    html += "<tr class='w3-sand'>";
+                    html += "<tr class='item w3-sand'>";
                 else                
-                    html += "<tr>";
+                    html += "<tr class='item'>";
                 
                 #region Editier-Button
 
-                if (user.Accesslevel >= Server.Level_Admin || user.Id == shiftContactId || shiftId == 0 )
+                if (user.Accesslevel >= Server.Level_Admin || (user.Id == shiftContactId && user.Accesslevel >= Server.Level_Reciever) || shiftId == 0 )
                 {
                     string route = shiftId == 0 ? date.ToShortDateString() : shiftId.ToString();
 

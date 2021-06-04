@@ -93,14 +93,14 @@ namespace MelBoxSql
 
                     var command = connection.CreateCommand();
                     command.CommandText = query;
-                    Console.WriteLine(command.CommandText); //TEST
+                   // Console.WriteLine(command.CommandText); // für Debug 
 
                     if (args != null && args.Count > 0)
                     {
                         foreach (string key in args.Keys)
                         {
                             command.Parameters.AddWithValue(key, args[key]);
-                            Console.WriteLine(key + "\t"+ args[key]); //TEST
+                           // Console.WriteLine(key + "\t"+ args[key]); //TEST
                         }
                     }
                                        

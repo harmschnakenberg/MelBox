@@ -69,6 +69,13 @@ namespace MelBoxSql
             return Sql.Insert(TableName, ToDictionary(contact));
         }
 
+
+        /// <summary>
+        /// Legt einen neuen Benutzer Anhand einer Telefonnummer und/oder einer empfangenen Nachricht an.
+        /// </summary>
+        /// <param name="phone">Telefonnummer. Andere Zeichenfolgen werden ignoriert.</param>
+        /// <param name="message">Nachricht wird genutzt um KeyWord zu extrahieren</param>
+        /// <returns>Neuer Eintrag erfolgreich erstellt</returns>
         public static bool InsertNewContact(string phone, string message)
         {
             Contact contact = new Contact
@@ -102,11 +109,6 @@ namespace MelBoxSql
 
             string query = "SELECT * FROM " + TableName + " WHERE ";
             query += Sql.ColNameAlias(columns.Keys, " AND ");
-
-            foreach (var key in columns.Keys) //TEST
-            {
-                Console.WriteLine(key + "\t"+ columns[key]);
-            }
 
             return Sql.SelectDataTable("Kontakt", query, Sql.Alias(columns));
         }
@@ -162,7 +164,7 @@ namespace MelBoxSql
 
             ident = ident.TrimStart('+'); //Telefonnummer
 
-            string query = $"SELECT Id FROM {TableName} WHERE Name Like '%{ident}%' OR Phone = {ident} OR Email = {ident} OR KeyWord = {ident}; ";
+            string query = $"SELECT Id FROM {TableName} WHERE Name Like '%{ident}%' OR Phone = '{ident}' OR Email = '{ident}' OR KeyWord = '{ident.ToLower()}'; ";
 
             System.Data.DataTable dt = Sql.SelectDataTable("Kontakt-Id", query, null);
 
@@ -179,10 +181,11 @@ namespace MelBoxSql
 
         public static System.Data.DataTable SelectContactList(int accesslevel, int contactId = 0, string operation = "<=")
         {          
-            string query = "SELECT Contact.Id AS Id, Contact.Name AS Name, Company.Name AS Firma, Company.City AS Ort" +
+            string query = "SELECT Contact.Id AS Id, Contact.Name AS Name, Contact.Accesslevel AS Level, Company.Name AS Firma, Company.City AS Ort" +
                 " FROM " + TableName + 
                 " JOIN " + Tab_Company.TableName + " ON Company.Id = Contact.CompanyId" + //IFNULL() da sonst Kontakte ohne Firmeneintrag nicht angezeigt werden.
-                " WHERE Accesslevel " + operation + " " + accesslevel ;
+                " WHERE Accesslevel " + operation + " " + accesslevel +
+                " ORDER BY Contact.Name ";
 
             if (contactId > 0)
                 query += " AND Contact.Id = " + contactId;
@@ -216,6 +219,8 @@ namespace MelBoxSql
             Contact contact = SelectContact(contactId);
 
             Company company = Tab_Company.SelectCompany(contact.CompanyId);
+
+            if (contactId == 0 || contact.CompanyId < 1) return "-leer-";
 
             return $"{contact.Name}, {company.Name}, {System.Text.RegularExpressions.Regex.Replace(company.City, @"\d", "")}";
         }
@@ -338,7 +343,14 @@ namespace MelBoxSql
 
         public ulong Phone { get; set; }
 
-        public string KeyWord { get; set; } = null;
+        private string _KeyWord = null;
+        public string KeyWord { 
+            get { return _KeyWord; }
+            set { 
+                if (value != null) 
+                    _KeyWord = value.ToLower();  //nur Kleinbuchstaben
+            } 
+        }
 
         public int MaxInactiveHours { get; set; } = -1;
 

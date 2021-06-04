@@ -8,6 +8,10 @@ using System.Text;
 
 namespace MelBoxWeb
 {
+    /*
+     *
+     */
+
     public partial class Server
     {
         
@@ -15,6 +19,8 @@ namespace MelBoxWeb
 
         public static int Level_Admin { get; set; } = 9000; //Benutzerverwaltung u. -Einteilung
         public static int Level_Reciever { get; set; } = 2000; //Empfänger bzw. Bereitschaftsnehmer
+
+        //public static List<string> Urls { get; private set; }
 
         public static string Html_Skeleton { get; } = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "Skeleton.html");
         public static string Html_FormLogin { get; } = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "FormLogin.html");
@@ -34,20 +40,30 @@ namespace MelBoxWeb
         {
             if (restServer != null && restServer.IsListening) return;
 
-            restServer = RestServerBuilder.From<Startup>().Build();
-            //restServer = RestServerBuilder.UseDefaults().Build();
-
-            restServer.AfterStarting += (s) =>
+            try
             {
-                Process.Start("explorer", s.Prefixes.First());
-            };
+                restServer = RestServerBuilder.From<Startup>().Build();
+                //restServer = RestServerBuilder.UseDefaults().Build();
 
-            restServer.AfterStopping += (s) =>
+                //Urls = restServer.Prefixes.ToList();
+
+                restServer.AfterStarting += (s) =>
+                {
+                    Process.Start("explorer", s.Prefixes.First());
+                };
+
+                restServer.AfterStopping += (s) =>
+                {
+                    Console.WriteLine("Web-Server beendet.");
+                };
+
+                //Urls = restServer.Prefixes.ToList();
+                restServer.Start();
+            }
+            catch (Exception ex)
             {
-                Console.WriteLine("Web-Server beendet.");
-            };
-
-            restServer.Start();            
+                throw ex;
+            }
         }
 
         public static void Stop()

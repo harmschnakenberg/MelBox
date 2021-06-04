@@ -53,6 +53,18 @@ namespace MelBoxCore
                     MelBoxSql.Tab_Log.Insert(MelBoxSql.Tab_Log.Topic.Gsm, 2, call);
                     Console.WriteLine(DateTime.Now + "\t" + call);
                     break;
+                case Gsm.Modem.RelayCallEnabled:
+                    if ((bool)e.Value)
+                        Tab_Log.Insert(Tab_Log.Topic.Gsm, 3, "Sprachanrufe werden umgeleitet an +" + Gsm.RelayCallsToPhone);
+                    else
+                    {
+                        Tab_Log.Insert(Tab_Log.Topic.Gsm, 2, "Keine Umleitung von Sprachanrufen an +" + Gsm.RelayCallsToPhone);
+                        Gsm.Ask_RelayIncomingCalls(Gsm.RelayCallsToPhone);
+                    }
+                    break;
+                case Gsm.Modem.PinStatus:
+                    MelBoxWeb.GsmStatus.PinStatus = e.Value.ToString();
+                    break;
                 default:
                     break;
             }
@@ -77,7 +89,12 @@ namespace MelBoxCore
             {
                 confirmation = Tab_Sent.Confirmation.AbortedSending;
 
-                string email = $"SMS Absender >{e.Reciever}<\r\nSMS Text >{e.Message}<\r\nSMS Sendezeit >{e.DischargeTimeUtc}<\r\n\r\nWeiterleitungsfehler!";
+                string email = $"SMS Absender >{e.Reciever}<\r\n" +
+                    $"SMS Text >{e.Message}<\r\n" +
+                    $"SMS Sendezeit >{e.DischargeTimeUtc}<\r\n" +
+                    $"Interne Refernez >{e.InternalReference}<\r\n\r\n" +
+                    $"Senden durch Mobilfunknetzbetreiber abgebrochen! Empfänger empfangsbereit?";
+
                 MelBoxSql.Tab_Log.Insert(Tab_Log.Topic.Gsm, 1, $"SMS konnte nicht an >{e.Reciever}< versendet werden: {e.Message}");
                 Email.Send(null, email, $"Sendefehler >{e.Reciever}<");
             }
@@ -93,142 +110,15 @@ namespace MelBoxCore
             }
         }
 
-        private static void Gsm_SmsRecievedEvent(object sender, ParseSms e)
-        {
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(e.Sender + ":\r\n" + e.Message);
-            Console.ForegroundColor = ConsoleColor.Gray;
-
-            #region SMS-Empfang in Datenbank protokollieren
-            int fromId = MelBoxSql.Tab_Contact.SelectContactId(e.Sender);
-
-            if (fromId == 0) // Unbekannter Sender
-            {
-                Tab_Contact.InsertNewContact(e.Sender, e.Message);
-                fromId = MelBoxSql.Tab_Contact.SelectContactId(e.Sender);
-            }
-#if DEBUG
-            Console.WriteLine($"Debug: Sender >{e.Sender}< hat die Id {fromId}");
-#endif
-
-            int messageId = MelBoxSql.Tab_Message.SelectOrCreateMessageId(e.Message);
-
-            Recieved recieved1 = new Recieved(fromId, messageId)
-            {
-                RecTime = DateTime.UtcNow
-            };
-            MelBoxSql.Tab_Recieved.Insert(recieved1);
-            #endregion
-
-            #region Weiterleiten per EMail oder SMS
-            MailAddressCollection emailRecievers = new MailAddressCollection();
-            string emailSuffix = string.Empty;
-
-            #region Meldelinientest 'SmsAbruf'
-            if (e.Message.ToLower().Trim() == SmsWayValidationTrigger.ToLower())
-            {
-                MelBoxGsm.Gsm.Ask_SmsSend(e.Sender, e.Message.Trim() + " um " + DateTime.Now.ToString("HH:mm:ss") + " Uhr.");
-
-                Sent sent = new Sent(fromId, messageId, Tab_Contact.Communication.Sms)
-                {
-                    SentTime = DateTime.UtcNow
-                };
-                MelBoxSql.Tab_Sent.Insert(sent);
-            }
-            else
-            #endregion
-            {
-            #region Nachricht zum jetzigen Zeitpunkt gesperrt?
-                bool blocked = Tab_Message.IsMessageBlockedNow(messageId);
-
-                
-                if (blocked)
-                    emailSuffix += Environment.NewLine + "Keine Weiterleitung an Bereitschaftshandy da SMS zur Zeit gesperrt.";
-                else
-                #endregion
-                {
-                    #region An Bereitschaft senden
-                    //Bereitschaft ermitteln
-                    List<MelBoxSql.Shift> currentShifts = MelBoxSql.Tab_Shift.SelectOrCreateCurrentShift();
-                    Console.WriteLine("Aktuelle Bereitschaft: ");
-
-                    //an Bereitschaft weiterleiten
-                    foreach (var shift in currentShifts)
-                    {
-                        Contact to = MelBoxSql.Tab_Contact.SelectContact(shift.ContactId);
-                        Console.WriteLine($"Id [{shift.Id}] >{to.Name}<");
-
-                        //Email freigegeben und gültig?
-                        if ((to.Via & Tab_Contact.Communication.Email) > 0 && Tab_Contact.IsEmail(to.Email))
-                        {
-                            emailRecievers.Add(new MailAddress(to.Email, to.Name));
-
-                            Sent sent = new Sent(shift.ContactId, messageId, Tab_Contact.Communication.Email)
-                            {
-                                Confirmation = Tab_Sent.Confirmation.Unknown
-                            };
-
-                            MelBoxSql.Tab_Sent.Insert(sent);
-                        }
-
-                        //SMS?
-                        if ((to.Via & Tab_Contact.Communication.Sms) > 0)
-                        {
-                            Sent sent = new Sent(shift.ContactId, messageId, Tab_Contact.Communication.Sms)
-                            {
-                                Confirmation = Tab_Sent.Confirmation.NaN
-                            };
-
-                            MelBoxSql.Tab_Sent.Insert(sent);
-                            MelBoxGsm.Gsm.Ask_SmsSend("+" + to.Phone.ToString(), e.Message);
-                        }
-                    }
-
-                    if (currentShifts.Count == 0)
-                    {
-                        Console.WriteLine("z.Zt. keine aktive Bereitschaft");
-                        emailSuffix += Environment.NewLine + "Keine Weiterleitung an Bereitschaftshandy in der Geschäftszeit.";
-                    }
-                    else
-                    {
-                        emailSuffix += Environment.NewLine + "Weiterleitung an Bereitschaftshandy außerhalb Geschäftszeiten ist erfolgt.";
-                    }
-                    #endregion
-                }
-            }
-
-            //Emails an Bereitschaft und ständige Empfänger senden.
-            string subject = $"SMS-Eingang >{MelBoxSql.Tab_Contact.SelectName_Company_City(fromId)}<, Text >{e.Message}<"; 
-            string body = $"Absender >{e.Sender}<\r\nText >{e.Message}<\r\nSendezeit >{e.TimeUtc.ToLocalTime().ToLongTimeString()}<\r\n" + emailSuffix;
-
-            Email.Send(emailRecievers, body, subject);
-
-            #endregion
-        }
-
         private static void Gsm_SmsSentEvent(object sender, ParseSms e)
         {
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.WriteLine("Versendet " + e.Sender + ":\r\n" + e.Message);
             Console.ForegroundColor = ConsoleColor.Gray;
-
-            int toId = MelBoxSql.Tab_Contact.SelectContactId(e.Sender);
-
+                       
             string msg = e.Message.ToLower().StartsWith(SmsWayValidationTrigger.ToLower()) ? SmsWayValidationTrigger : e.Message; //Bei "SmsAbruf" ist SendeText und Empfangstect verschieden.
             int contentId = MelBoxSql.Tab_Message.SelectOrCreateMessageId(msg);
-
-            //Kontakt unbekannt? Neu erstellen!
-            if (toId == 0)
-            {
-                Tab_Contact.InsertNewContact(e.Sender, e.Message);
-                toId = MelBoxSql.Tab_Contact.SelectContactId(e.Sender);
-
-                string log = e.Message.Length > 32 ? e.Message.Substring(0, 32) + "..." : e.Message;
-                log = $"Neuen Benutzer [{toId}] angelegt mit Absender >{e.Sender}< Nachricht: >{log}<";
-
-                Tab_Log.Insert(Tab_Log.Topic.Database, 2, log);
-                Email.Send(null, log, "Unbekannter Absender: Benutzer angelegt.", false);
-            }
+            int toId = GetSmsSenderID(e.Sender, e.Message);
 
             //'SMS gesendet' in Datenbank schreiben
             MelBoxSql.Sent sent = new MelBoxSql.Sent(toId, contentId, MelBoxSql.Tab_Contact.Communication.Sms)
@@ -238,9 +128,141 @@ namespace MelBoxCore
                 SentTime = e.TimeUtc
             };
 
+            if (sent.SentTime == DateTime.MinValue)
+                sent.SentTime = DateTime.UtcNow;
+
             MelBoxSql.Tab_Sent.Insert(sent);
         }
 
+        private static void Gsm_SmsRecievedEvent(object sender, ParseSms e)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine(e.Sender + ":\r\n" + e.Message);
+            Console.ForegroundColor = ConsoleColor.Gray;
+
+            #region SMS-Empfang in Datenbank protokollieren
+            int fromId = GetSmsSenderID(e.Sender, e.Message);
+            int messageId = MelBoxSql.Tab_Message.SelectOrCreateMessageId(e.Message);
+
+            Recieved recieved1 = new Recieved()
+            {
+                FromId = fromId,
+                ContentId = messageId,
+                RecTime = DateTime.UtcNow
+            };
+
+            MelBoxSql.Tab_Recieved.Insert(recieved1);
+            #endregion
+
+            #region Weiterleiten per EMail oder SMS
+
+            MailAddressCollection emailRecievers = new MailAddressCollection();
+            string emailSuffix = string.Empty;
+                        
+            if (e.Message.ToLower().Trim() == SmsWayValidationTrigger.ToLower()) // SmsAbruf?
+            {
+                #region Meldelinientest 'SmsAbruf'
+
+                MelBoxGsm.Gsm.Ask_SmsSend(e.Sender, e.Message.Trim() + " um " + DateTime.Now.ToString("HH:mm:ss") + " Uhr.");
+
+                Sent sent = new Sent(fromId, messageId, Tab_Contact.Communication.Sms)
+                {
+                    SentTime = DateTime.UtcNow
+                };
+                MelBoxSql.Tab_Sent.Insert(sent);
+
+                #endregion
+            }
+            else if (Tab_Message.IsMessageBlockedNow(messageId)) // Nachricht zum jetzigen Zeitpunkt gesperrt?            
+            {
+                emailSuffix += Environment.NewLine + "Keine Weiterleitung an Bereitschaftshandy da SMS zur Zeit gesperrt.";
+            }
+            else // An Bereitschaft senden          
+            {
+                #region An Bereitschaft senden
+                //Bereitschaft ermitteln
+                List<MelBoxSql.Shift> currentShifts = MelBoxSql.Tab_Shift.SelectOrCreateCurrentShift();
+                Console.WriteLine("Aktuelle Bereitschaft: ");
+
+                //an Bereitschaft weiterleiten
+                foreach (var shift in currentShifts)
+                {
+                    Contact to = MelBoxSql.Tab_Contact.SelectContact(shift.ContactId);
+                    Console.WriteLine($"Id [{shift.Id}] >{to.Name}< von >{shift.Start}< bis >{shift.End}<");
+
+                    //Email freigegeben und gültig?
+                    if ((to.Via & Tab_Contact.Communication.Email) > 0 && Tab_Contact.IsEmail(to.Email))
+                    {
+                        emailRecievers.Add(new MailAddress(to.Email, to.Name));
+
+                        Sent sent = new Sent(shift.ContactId, messageId, Tab_Contact.Communication.Email)
+                        {
+                            Confirmation = Tab_Sent.Confirmation.Unknown,
+                            SentTime = DateTime.UtcNow
+                        };
+
+                        MelBoxSql.Tab_Sent.Insert(sent);
+                    }
+
+                    //SMS?
+                    if ((to.Via & Tab_Contact.Communication.Sms) > 0)
+                    {
+                        Sent sent = new Sent(shift.ContactId, messageId, Tab_Contact.Communication.Sms)
+                        {
+                            Confirmation = Tab_Sent.Confirmation.NaN,
+                            SentTime = DateTime.UtcNow
+                        };
+
+                        MelBoxSql.Tab_Sent.Insert(sent);
+                        MelBoxGsm.Gsm.Ask_SmsSend("+" + to.Phone.ToString(), e.Message);
+                    }
+                }
+
+                if (currentShifts.Count == 0)
+                {
+                    Console.WriteLine("z.Zt. keine aktive Bereitschaft");
+                    emailSuffix += Environment.NewLine + "Keine Weiterleitung an Bereitschaftshandy während der Geschäftszeit.";
+                }
+                else
+                {
+                    emailSuffix += Environment.NewLine + "Weiterleitung an Bereitschaftshandy außerhalb Geschäftszeiten ist erfolgt.";
+                }
+                #endregion
+            }
+            
+            //Emails an Bereitschaft und ständige Empfänger senden.
+            string subject = $"SMS-Eingang >{MelBoxSql.Tab_Contact.SelectName_Company_City(fromId)}<, Text >{e.Message}<"; 
+            string body = $"Absender >{e.Sender}<\r\nText >{e.Message}<\r\nSendezeit >{e.TimeUtc.ToLocalTime().ToLongTimeString()}<\r\n" + emailSuffix;
+            Email.Send(emailRecievers, body, subject);
+
+            #endregion
+        }
+
+        #region Hilfs-Methoden
+
+        private static int GetSmsSenderID(string phone, string message)
+        {
+            int fromId = MelBoxSql.Tab_Contact.SelectContactId(phone);
+
+            if (fromId == 0) // Unbekannter Sender
+            {
+                Tab_Contact.InsertNewContact(phone, message); 
+                fromId = MelBoxSql.Tab_Contact.SelectContactId(phone);
+
+                string log = message.Length > 32 ? message.Substring(0, 32) + "..." : message;
+                log = $"Neuen Benutzer [{fromId}] angelegt mit Absender >{phone}< Nachricht: >{log}<";
+
+                Tab_Log.Insert(Tab_Log.Topic.Database, 2, log);
+                Email.Send(null, log, "Unbekannter Absender: Benutzer angelegt.", false);
+            }
+
+            #if DEBUG
+            Console.WriteLine($"Debug: Kontakt >{phone}< hat die Id {fromId}");
+            #endif
+
+            return fromId;
+        }
+        #endregion
 
     }
 }

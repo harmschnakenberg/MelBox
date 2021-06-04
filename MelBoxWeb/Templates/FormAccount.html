@@ -12,11 +12,18 @@
                 <input name="Id" type="hidden" value="##Id##" />
 
                 <label><b>Benutzername</b></label>
-                <input name="name" type="text" class="w3-input w3-border w3-margin-bottom" placeholder="Benutzernamen eingeben" value="##Name##">
+                <div class="w3-row">
+                    <div class="w3-col w3-right" style="width:110px">
+                        <input class="w3-input w3-border" value="##UserRole##" disabled>
+                    </div>
+                    <div class="w3-rest">
+                        <input name="name" type="text" class="w3-input w3-border w3-margin-bottom" placeholder="Benutzernamen eingeben" value="##Name##">
+                    </div>
+                </div>
 
                 <label><b>Password</b></label>
                 <div class="w3-row">
-                    <div class="w3-col w3-right" style="width:100px">
+                    <div class="w3-col w3-right" style="width:110px">
                         <input name="Accesslevel" type="number" class="w3-input w3-border" value="##Accesslevel##" max="##UserAccesslevel##" ##readonly## />
                     </div>
                     <div class="w3-rest">
@@ -51,7 +58,7 @@
                         <input name="viaAlwaysEmail" type="checkbox" class="w3-check" ##viaAlwaysEmail## ##disabled##>
                     </div>
                     <div class="w3-rest">
-                        <label >Immer bei eingehenden Meldungen benachrichtigen</label>
+                        <label>Immer bei eingehenden Meldungen benachrichtigen</label>
                     </div>
                 </div>
 
@@ -68,12 +75,12 @@
                 <label><b>Schlüsselwort</b></label>
                 <input name="KeyWord" type="text" class="w3-input w3-border w3-margin-bottom" placeholder="-leer-" value="##KeyWord##" ##readonly## />
 
-                <label><b>Maximale Zeit zwischen Meldungen</b></label>
+                <label><b>Senderüberwachung: Maximale Zeit zwischen Meldungen</b></label>
                 <div class="w3-row">
                     <div class="w3-col" style="width:75px">
                         <input name="MaxInactiveHours" type="number" class="w3-input w3-border" value="##MaxInactiveHours##" ##disabled## />
                     </div>
-                    <div class="w3-rest w3-container w3-panel">Stunden</div>
+                    <div class="w3-rest w3-container w3-panel">Stunden <i> - 0 = keine &Uuml;berwachung</i></div>
                 </div>
 
                 <div class="w3-row">
@@ -82,8 +89,6 @@
                     <button class="w3-button w3-block w3-teal w3-section w3-padding w3-col w3-quarter w3-margin-left  w3-right" type="submit">Speichern</button>
                 </div>
             </div>
-
-
         </form>
     </div>
 </div>

@@ -135,5 +135,6 @@ namespace MelBoxWeb
         public static string ServiceCenterNumber { get; set; } = init; //SMS-Serviceneter-Nummer
         public static string ProviderName { get; set; } = init; //Netzbetreibername z.B. Telekom
         public static ulong RelayNumber { get; set; } = 0; //Nummer, an die Sprachanrufe weitergeleitet werden.
+        public static string PinStatus { get; set; } = init; //Gibt an, ob die PIN richtig gesetzt ist
     }
 }

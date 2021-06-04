@@ -54,7 +54,7 @@ namespace MelBoxSql
             if (message.Id > 0) set.Add(nameof(message.Id), message.Id);
             if (message.EntryTime != DateTime.MinValue) set.Add(nameof(message.EntryTime), message.EntryTime);
             if (message.Content != null) set.Add(nameof(message.Content), message.Content);
-            if (message.BlockedDays >= 0) set.Add(nameof(message.BlockedDays), message.BlockedDays);
+            if (message.BlockedDays != BlockedDays.NaN) set.Add(nameof(message.BlockedDays), message.BlockedDays);
             if (message.StartBlockHour >= 0) set.Add(nameof(message.StartBlockHour), message.StartBlockHour);
             if (message.EndBlockHour >= 0) set.Add(nameof(message.EndBlockHour), message.EndBlockHour);
 
@@ -174,7 +174,7 @@ namespace MelBoxSql
                 KeyWords += " " + words[1].Trim();
             }
 
-            return KeyWords;
+            return KeyWords.ToLower();
         }
 
         //BAUSTELLE

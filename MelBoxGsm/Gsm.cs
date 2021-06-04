@@ -19,15 +19,17 @@ namespace MelBoxGsm
 
         private static ReliableSerialPort Port = null;
 
+        public static event EventHandler SerialPortDisposed;
 
         public static string SerialPortName { get; set; } = SerialPort.GetPortNames()[SerialPort.GetPortNames().Length - 1];
-        public static int SerialPortBaudRate { get; set; } = 9600;
+        public static int SerialPortBaudRate { get; set; } = 38400;
 
         public static int SimPin { get; set; } = 0000;
 
         #region Konstanten
         const string ctrlz = "\u001a";
 
+        //const string Answer_TextMode = "+CMGF: ";
         const string Answer_Signal = "+CSQ: ";
         const string Answer_SmsRead = "+CMGL: ";
         const string Answer_SmsSent = "+CMGS: ";
@@ -49,10 +51,16 @@ namespace MelBoxGsm
             {
                 Port = new ReliableSerialPort(SerialPortName, SerialPortBaudRate, System.IO.Ports.Parity.None, 8, System.IO.Ports.StopBits.One);
                 Port.DataReceived += ParseResponse;
+                Port.Disposed += Port_Disposed;
                 Port.Open();
             }
 
             return Port.IsOpen;
+        }
+
+        private static void Port_Disposed(object sender, EventArgs e)
+        {            
+            SerialPortDisposed?.Invoke(null, e);
         }
 
         public static void DisConnect()
@@ -79,8 +87,8 @@ namespace MelBoxGsm
             if ((Debug & (int)DebugCategory.GsmAnswer) > 0)
             {
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.WriteLine(input.Replace(Environment.NewLine, " "));
-                //Console.WriteLine(input);
+                //Console.WriteLine(input.Replace(Environment.NewLine, "; "));
+                Console.WriteLine(input);
                 Console.ForegroundColor = ConsoleColor.Gray;
             }
 

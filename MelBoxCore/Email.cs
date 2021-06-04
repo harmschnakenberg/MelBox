@@ -7,6 +7,8 @@ namespace MelBoxCore
     /* EMailSMTP = kreutztraeger-de.mail.protection.outlook.com               ' (192.168.165.29) SMTP 
      * EMailsTo = u.wenzel@kreutztraeger.de; thomas.schulz@kreutztraeger.de; bernd.kreutztraeger@kreutztraeger.de; d.brylski@kreutztraeger.de; a.fecke@kreutztraeger.de; christian.juds@kreutztraeger.de; steven.kemper@kreutztraeger.de; gunnar.foertsch@kreutztraeger.de; david.eichhorn@kreutztraeger.de
      */
+
+    //Hinweis: Empfang von Emails ist mit System.Net.Mail in .NET Core (noch) nicht möglich.
     class Email
     {       
         public static MailAddress From = new MailAddress("SMSZentrale@Kreutztraeger.de", "SMS-Zentrale");
@@ -15,6 +17,9 @@ namespace MelBoxCore
 
         public static string SmtpHost { get; set; } = "kreutztraeger-de.mail.protection.outlook.com";
         public static int SmtpPort { get; set; } = 25; //587;
+        public static bool SmtpEnableSSL { get; set; } = false;
+        public static string SmtpUser { get; set; } = "";
+        public static string SmtpPassword { get; set; } = "";
 
         private static MailAddressCollection permanentRecievers = null;
 
@@ -73,6 +78,7 @@ namespace MelBoxCore
                             Console.WriteLine("Send(): Emailadresse CC gesperrt: " + cc.Address);
                         else
 #endif
+                            if (!mail.To.Contains(cc))
                             mail.CC.Add(cc);
                     }
                 }
@@ -91,15 +97,19 @@ namespace MelBoxCore
 
                 #region Smtp
                 using var smtpClient = new SmtpClient();
-                smtpClient.SendCompleted += SmtpClient_SendCompleted;
+                //smtpClient.SendCompleted += SmtpClient_SendCompleted;               
                 smtpClient.Host = SmtpHost;
                 smtpClient.Port = SmtpPort;
 
                 //smtpClient.UseDefaultCredentials = true;
-                //smtpClient.EnableSsl = true;
+
+                if (SmtpUser.Length > 0 && SmtpPassword.Length > 0) 
+                    smtpClient.Credentials = new System.Net.NetworkCredential(SmtpUser, SmtpPassword);
+
+                smtpClient.EnableSsl = SmtpEnableSSL;
 
                 smtpClient.Send(mail);
-                smtpClient.SendCompleted -= SmtpClient_SendCompleted;
+                //smtpClient.SendCompleted -= SmtpClient_SendCompleted;
                 #endregion
 
             }
@@ -117,9 +127,13 @@ namespace MelBoxCore
             }
         }
 
-        private static void SmtpClient_SendCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
-        {
-            Console.WriteLine("Email versendet: " + e.UserState + Environment.NewLine + e.Error);
-        }
+        //private static void SmtpClient_SendCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        //{
+        //    smtpClient.SendCompleted -= SmtpClient_SendCompleted;
+        //    Console.WriteLine("Email versendet: " + e.UserState + Environment.NewLine + e.Error);
+        //}
+
+
+
     }
 }

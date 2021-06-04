@@ -24,24 +24,53 @@ namespace MelBoxCore
             {
                 w.WriteLine("[ öäü " + w.Encoding.EncodingName + ", Build " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + "]\r\n" +
                             "\r\n[Intern]\r\n" +
+                            ";;; Sms-Text zur Prüfung des Sendewegs (case-insensitive):\r\n" + 
                             $";{nameof(Program.SmsWayValidationTrigger)}={Program.SmsWayValidationTrigger}\r\n" +
+
+                            "\r\n;;; Tagesstunde zu der tägliche Aufgaben angestoßen werden (Routine-Meldung, DB-Backup,..):\r\n" +
                             $";{nameof(Program.HourOfDailyTasks)}={Program.HourOfDailyTasks}\r\n" +
 
+                            "\r\n;;; ID des Kontakts aus der Tabelle 'Contact', der als Standardempfänger eingesetzt werden soll:\r\n" +
+                            $";{nameof(MelBoxSql.Tab_Shift.DefaultShiftContactId)}={MelBoxSql.Tab_Shift.DefaultShiftContactId}\r\n" +
+                            
                             "\r\n[Gsm-Modem]\r\n" +
+                            ";;; Telefonnummer für Debug-Meldungen (z.B. Routine-Meldung):\r\n" +
                             $";{nameof(Gsm.AdminPhone)}={Gsm.AdminPhone}\r\n" +
+
+                            "\r\n;;; Telefonnummer an die Sprachanrufe weitergelietet werden:\r\n" +
+                             $";{nameof(Gsm.RelayCallsToPhone)}={Gsm.RelayCallsToPhone}\r\n" +
+
+                            "\r\n;;; COM-Port an den das Modem angeschlossen ist:\r\n" +
                             $";{nameof(Gsm.SerialPortName)}={Gsm.SerialPortName}\r\n" +
+
+                             "\r\n;;; Baudrate der Modem-Kommunikation:\r\n" +
                             $";{nameof(Gsm.SerialPortBaudRate)}={Gsm.SerialPortBaudRate}\r\n" +
+
+                             "\r\n;;; Pin der eingelegten SIM-Karte (bei Bedarf):\r\n" +
                             $";{nameof(Gsm.SimPin)}={Gsm.SimPin}\r\n" +
 
                             "\r\n[Email]\r\n" +
+                             ";;; E-Mail-Server:\r\n" +
                             $";{nameof(Email.SmtpHost)}={Email.SmtpHost}\r\n" +
                             $";{nameof(Email.SmtpPort)}={Email.SmtpPort}\r\n" +
+                            $";{nameof(Email.SmtpEnableSSL)}={Email.SmtpEnableSSL}\r\n" +
+                            
+
+                             "\r\n;;; Angezeigte Absenderadresse von Emails aus dem Programm:\r\n" +
                             $";{nameof(Email.From)}={Email.From}\r\n" +
+
+                            "\r\n;;; Empfänger für Debug-Meldungen:\r\n" +
                             $";{nameof(Email.Admin)}={Email.Admin}\r\n" +
 
                              "\r\n[DB]\r\n" +
+                             ";;; min. Level für Administratorrechte:\r\n" +
                             $";{nameof(MelBoxWeb.Server.Level_Admin)}={MelBoxWeb.Server.Level_Admin}\r\n" +
-                            $";{nameof(MelBoxWeb.Server.Level_Reciever)}={MelBoxWeb.Server.Level_Reciever}\r\n"
+
+                            "\r\n;;; min. Level für Benutzerrechte:\r\n" +
+                            $";{nameof(MelBoxWeb.Server.Level_Reciever)}={MelBoxWeb.Server.Level_Reciever}\r\n" +
+
+                            "\r\n;;; max. dargestellte Einträge in Weboberfläche:\r\n" +
+                            $";{nameof(MelBoxSql.Sql.MaxSelectedRows)}={MelBoxSql.Sql.MaxSelectedRows}\r\n"
 
                             );
             }
@@ -76,10 +105,22 @@ namespace MelBoxCore
                             if (int.TryParse(val, out int i))
                              Program.HourOfDailyTasks = i;
                             break;
+                        case nameof(MelBoxSql.Tab_Shift.DefaultShiftContactId):
+                            if (int.TryParse(val, out i))
+                                MelBoxSql.Tab_Shift.DefaultShiftContactId = i;
+                            break;
+                        case nameof(MelBoxSql.Sql.MaxSelectedRows):
+                            if (int.TryParse(val, out i))
+                                MelBoxSql.Sql.MaxSelectedRows = i;
+                            break;                                                        
                         case nameof(Gsm.AdminPhone):
                             if (ulong.TryParse(val.Trim('+'), out ulong phone))
                                 Gsm.AdminPhone = phone;
                             break;
+                        case nameof(Gsm.RelayCallsToPhone):
+                            if (ulong.TryParse(val.Trim('+'), out phone))
+                                Gsm.RelayCallsToPhone = phone;
+                            break;                            
                         case nameof(Gsm.SerialPortName):
                             Gsm.SerialPortName = val;
                             break;
@@ -101,14 +142,19 @@ namespace MelBoxCore
                         case nameof(Email.Admin):
                             Email.Admin = GetMailAddress(val);
                             break;
-                        case nameof(MelBoxWeb.Server.Level_Admin):
-                            if (int.TryParse(val, out i))
-                                MelBoxWeb.Server.Level_Admin = i;
+                        //case nameof(MelBoxWeb.Server.Level_Admin):
+                        //    if (int.TryParse(val, out i))
+                        //        MelBoxWeb.Server.Level_Admin = i;
+                        //    break;
+                        //case nameof(MelBoxWeb.Server.Level_Reciever):
+                        //    if (int.TryParse(val, out i))
+                        //        MelBoxWeb.Server.Level_Reciever = i;
+                        //    break;
+                        case nameof(Email.SmtpEnableSSL):
+                            if (bool.TryParse(val, out bool b))
+                                Email.SmtpEnableSSL = b;
                             break;
-                        case nameof(MelBoxWeb.Server.Level_Reciever):
-                            if (int.TryParse(val, out i))
-                                MelBoxWeb.Server.Level_Reciever = i;
-                            break;
+                            
                     }
 
                 }

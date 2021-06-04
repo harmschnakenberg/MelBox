@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 
 namespace MelBoxGsm
 {
@@ -107,6 +108,9 @@ namespace MelBoxGsm
                     }
                     else
                     {
+#if DEBUG
+                        Console.WriteLine("Lese SMS aus:\r\n" + input);
+#endif
                         ParseNewSms(header, lines);
                     }
 
@@ -172,7 +176,7 @@ namespace MelBoxGsm
 
         private static void ParseNewSms(string[] header, string[] line)
         {
-            //Dies ist festgestellt als eine SMS-Nachricht
+            //Dies ist vorher festgestellt als eine SMS-Nachricht
 
             //<index> Index
             int.TryParse(header[(int)HeaderSms.Index], out int index);
@@ -198,6 +202,11 @@ namespace MelBoxGsm
                 messageText += line[i] + " ";
             }
 
+            messageText = messageText.Trim();
+
+            if (!messageText.Contains(" ") && messageText.Length > 20) //Kein Leerzeichen und lang: Vermutung Sms-Inhalt ist in UCS2 Formatiert wegen Sonderzeichen z.B. °C, ä, ß...            
+                messageText = DecodeUcs2(messageText);
+            
             ParseSms sms = new ParseSms
             {
                 RawHeader = line[0],
@@ -244,6 +253,34 @@ namespace MelBoxGsm
 
             return time;
         }
+
+        public static string DecodeUcs2(string ucs2)
+        {
+            //UCS2 ist Fallback-Encode, wenn Standard GSM-Encode nicht ausreicht.
+            ucs2 = ucs2.Trim();
+            System.Collections.Generic.List<byte> bytes = new System.Collections.Generic.List<byte>();
+
+            for (int i = 0; i < ucs2.Length; i += 2)
+            {
+                string str = ucs2.Substring(i, 2);                
+                bytes.Add(byte.Parse(str, NumberStyles.HexNumber));
+#if DEBUG
+                Console.Write(str + " ");
+#endif
+            }
+//#if DEBUG
+//            Console.WriteLine();
+
+//            string result = "Unicode: " + System.Text.Encoding.Unicode.GetString(bytes.ToArray());
+//            result += Environment.NewLine + "UTF8:      " + System.Text.Encoding.UTF8.GetString(bytes.ToArray());
+//            result += Environment.NewLine + "Default:   " + System.Text.Encoding.Default.GetString(bytes.ToArray());
+//            result += Environment.NewLine + "UTF7:      " + System.Text.Encoding.UTF7.GetString(bytes.ToArray());
+//            result += Environment.NewLine + "ASCII:     " + System.Text.Encoding.ASCII.GetString(bytes.ToArray());
+//            result += Environment.NewLine + "BigEndian: " + System.Text.Encoding.BigEndianUnicode.GetString(bytes.ToArray());
+//#endif
+            return System.Text.Encoding.BigEndianUnicode.GetString(bytes.ToArray());
+        }
+
 
         #endregion
     }

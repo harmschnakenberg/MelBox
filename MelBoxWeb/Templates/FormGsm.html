@@ -1,6 +1,6 @@
 ﻿
 <script>
-    var myVar = setInterval(myTimer, 30000);
+    var myVar = setInterval(myTimer, 10000);
 
     function myTimer() {
         getQuality("/gsm/quality");
@@ -20,14 +20,7 @@
                 div1.style.width = data.SignalQuality + '%';      
 
                 var div2 = document.getElementById("registered");
-                div2.innerHTML = data.NetworkRegistration;
-
-                //var text = "";
-                //var x;
-                //for (x in data) {
-                //    text += data[x] + '|';
-                //}
-                //document.getElementById("test").innerHTML = text;                
+                div2.innerHTML = data.NetworkRegistration;       
             })
             .catch((err) => {
                 // Do something for an error here
@@ -47,7 +40,8 @@
             </div>
         </li>
         <li>
-            <label>Registrierung</label>
+            <label>Mobilfunknetz
+            </label>
             <div id="registered" class="w3-light-grey">
                 ##Registered##
             </div>
@@ -68,6 +62,12 @@
             <label>Sprachanrufe weiterleiten an</label>
             <div class="w3-light-grey">
                 ##RelayNumber##
+            </div>
+        </li>
+        <li>
+            <label>PIN an SIM-Karte</label>
+            <div class="w3-light-grey">
+                ##PinStatus##
             </div>
         </li>
     </ul>
