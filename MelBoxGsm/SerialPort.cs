@@ -167,9 +167,12 @@ namespace MelBoxGsm
             string request = RequestQueue.Dequeue();
             base.WriteLine(request);
 
-            Console.ForegroundColor = ConsoleColor.DarkRed;
-            Console.WriteLine(request);
-            Console.ForegroundColor = ConsoleColor.Gray;
+            if ((Gsm.Debug & (int)Gsm.DebugCategory.GsmRequest) > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine(request);
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
 
             if (RequestQueue.Count == 0)
             {

@@ -136,25 +136,23 @@ namespace MelBoxCore
                                 Email.SmtpPort = i;
                             break;
                         case nameof(Email.From):
-                           // Console.WriteLine("Email aus Ini noch nicht implementiert.");
                             Email.From = GetMailAddress(val);
                             break;
                         case nameof(Email.Admin):
                             Email.Admin = GetMailAddress(val);
                             break;
-                        //case nameof(MelBoxWeb.Server.Level_Admin):
-                        //    if (int.TryParse(val, out i))
-                        //        MelBoxWeb.Server.Level_Admin = i;
-                        //    break;
-                        //case nameof(MelBoxWeb.Server.Level_Reciever):
-                        //    if (int.TryParse(val, out i))
-                        //        MelBoxWeb.Server.Level_Reciever = i;
-                        //    break;
+                        case nameof(MelBoxWeb.Server.Level_Admin):
+                            if (int.TryParse(val, out i))
+                                MelBoxWeb.Server.Level_Admin = i;
+                            break;
+                        case nameof(MelBoxWeb.Server.Level_Reciever):
+                            if (int.TryParse(val, out i))
+                                MelBoxWeb.Server.Level_Reciever = i;
+                            break;
                         case nameof(Email.SmtpEnableSSL):
                             if (bool.TryParse(val, out bool b))
                                 Email.SmtpEnableSSL = b;
-                            break;
-                            
+                            break;                            
                     }
 
                 }

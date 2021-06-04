@@ -309,8 +309,12 @@ namespace MelBoxWeb
     
         internal static string ButtonNew(string root)
         {
-            return $"<button class='w3-button w3-block w3-blue w3-section w3-padding w3-col w3-quarter type='submit' formaction='/{root}/new'>Neu</button>";
+            return $"<button style='width:20%' class='w3-button w3-block w3-blue w3-section w3-padding w3-margin-right w3-col type='submit' formaction='/{root}/new'>Neu</button>\r\n";
         }
 
+        internal static string ButtonDelete(string root, int id)
+        {
+            return $"<button style='width:20%' class='w3-button w3-block w3-pink w3-section w3-padding w3-col type='submit' formaction='/{root}/delete/{id}'>Löschen</button>\r\n";
+        }
     }
 }

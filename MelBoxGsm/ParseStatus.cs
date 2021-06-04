@@ -16,7 +16,9 @@ namespace MelBoxGsm
             ProviderName,
             IncomingCall,
             RelayCallEnabled,
-            PinStatus
+            PinStatus,
+            SimSlot,
+
         }
 
         public static ulong AdminPhone { get; set; } = 4916095285304;
@@ -327,18 +329,10 @@ namespace MelBoxGsm
         {
             string[] sim = input.Replace(Answer_SimSlot, string.Empty).Split(',');
 
-            if (sim[sim.Length - 1].Trim() == "1")
-            {
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine("SIM-Schubfach: SIM-Karte erkannt");
-                Console.ForegroundColor = ConsoleColor.Gray;
-            }
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine("SIM-Schubfach: SIM-Karte nicht erkannt");
-                Console.ForegroundColor = ConsoleColor.Gray;
-            }
+            if (sim[sim.Length - 1].Trim() == "1")            
+                OnGsmStatusReceived(Modem.SimSlot, "SIM-Schubfach: SIM-Karte erkannt");            
+            else            
+                OnGsmStatusReceived(Modem.SimSlot, "SIM-Schubfach: SIM-Karte nicht erkannt");            
         }
 
         // +CPIN: READY                         //BAUSTELLE: nicht ausreichend getestet
@@ -371,7 +365,7 @@ namespace MelBoxGsm
             if (items.Length > 2 && "1" == items[1]) //1=Weiterleitung Sprachanrufe, 2=Daten, 4=Fax
             {
                 bool status = "1" == items[0];
-                Console.WriteLine($"Weiterleitung Sprachanrufe an {items[2].Trim('"')} {(status ? "aktiviert" : "deaktiviert")}");
+                //Console.WriteLine($"Weiterleitung Sprachanrufe an {items[2].Trim('"')} {(status ? "aktiviert" : "deaktiviert")}");
 
                 OnGsmStatusReceived(Modem.RelayCallEnabled, status);
             }

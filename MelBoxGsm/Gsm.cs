@@ -13,7 +13,8 @@ namespace MelBoxGsm
         {
             None,
             GsmAnswer,
-            GsmStatus
+            GsmStatus,
+            GsmRequest
         }
         #endregion
 
@@ -49,6 +50,7 @@ namespace MelBoxGsm
         {
             if (Port == null || !Port.IsOpen)
             {
+                if (System.IO.Ports.SerialPort.GetPortNames().Length == 0) return false;
                 Port = new ReliableSerialPort(SerialPortName, SerialPortBaudRate, System.IO.Ports.Parity.None, 8, System.IO.Ports.StopBits.One);
                 Port.DataReceived += ParseResponse;
                 Port.Disposed += Port_Disposed;

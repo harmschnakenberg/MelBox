@@ -467,7 +467,8 @@ namespace MelBoxWeb
                 { "##KeyWord##", account.KeyWord },
                 { "##CompanyList##", isAdmin ? Tab_Company.SelectCompanyAllToHtmlOption(account.CompanyId) : string.Empty },
 
-                { "##NewContact##", isAdmin ? Html.ButtonNew("account") : string.Empty }
+                { "##NewContact##", isAdmin ? Html.ButtonNew("account") : string.Empty },
+                { "##DeleteContact##", isAdmin ? Html.ButtonDelete("account",  account.Id) : string.Empty}
             };
 
             string form = Server.Page(Server.Html_FormAccount, pairs);
@@ -648,6 +649,44 @@ namespace MelBoxWeb
 
             await Server.PageAsync(context, "Benutzerkonto ändern", alert);
         }
+       
+        [RestRoute("Post", "/account/delete/{id:num}")]
+        public static async Task AccountDelete(IHttpContext context)
+        {
+            #region Anfragenden Benutzer identifizieren
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+
+            if (guid == null || !Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+            #endregion
+
+            bool isAdmin = user.Accesslevel >= Server.Level_Admin;
+            string html = Html.Alert(1, "Fehlerhafter Parameter", "Aufruf mit fehlerhaftem Parameter.");
+
+            if (context.Request.PathParameters.TryGetValue("id", out string idStr))
+            {
+
+                if (!isAdmin || !int.TryParse(idStr, out int deleteId))
+                {
+                    html = Html.Alert(2, "Keine Berechtigung", $"Keine Berechtigung zum Löschen von Benutzern.");
+                }
+                else
+                {
+                    Contact contact = Tab_Contact.SelectContact(deleteId);
+
+                    if (!Tab_Contact.Delete(contact))                    
+                        html = Html.Alert(2, "Löschen fehlgeschlagen", $"Löschen des Benutzers [{deleteId}] >{contact.Name}< fehlgeschlagen.");                    
+                    else
+                        html = Html.Alert(1, "Benuter gelöscht", $"Der Benutzer [{deleteId}] >{contact.Name}< wurde aus der Datenbank gelöscht.");
+                }
+            }
+
+            await Server.PageAsync(context, "Benutzer löschen", html);
+        }
+
         #endregion
 
 
@@ -684,7 +723,8 @@ namespace MelBoxWeb
                 { "##Address##", company.Address },
                 { "##City##", company.City },
 
-                { "##NewCompany##", isAdmin ? Html.ButtonNew("company") : string.Empty }
+                { "##NewCompany##", isAdmin ? Html.ButtonNew("company") : string.Empty },
+                { "##DeleteCompany##", isAdmin ? Html.ButtonDelete("company", company.Id) : string.Empty}
             };
 
             string form = Server.Page(Server.Html_FormCompany, pairs);
@@ -782,6 +822,43 @@ namespace MelBoxWeb
 
             await Server.PageAsync(context, "Firmeninformation ändern", alert);
         }
+
+        [RestRoute("Post", "/company/delete/{id:num}")]
+        public static async Task CompanyDelete(IHttpContext context)
+        {
+            #region Anfragenden Benutzer identifizieren
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+
+            if (guid == null || !Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+            #endregion
+            bool isAdmin = user.Accesslevel >= Server.Level_Admin;
+            string html = Html.Alert(1, "Fehlerhafter Parameter", "Aufruf mit fehlerhaftem Parameter.");
+
+            if (context.Request.PathParameters.TryGetValue("id", out string idStr))
+            {
+
+                if (!isAdmin || !int.TryParse(idStr, out int deleteId))
+                {
+                    html = Html.Alert(2, "Keine Berechtigung", $"Keine Berechtigung zum Löschen von Firmeninformationen.");
+                }
+                else
+                {
+                    Company company = Tab_Company.SelectCompany(deleteId);
+
+                    if (!Tab_Company.Delete(company))
+                        html = Html.Alert(2, "Löschen fehlgeschlagen", $"Löschen der Firma [{deleteId}] >{company.Name}< >{company.City}< fehlgeschlagen.");
+                    else
+                        html = Html.Alert(1, "Firma gelöscht", $"Die Firma [{deleteId}] >{company.Name}< >{company.City}< wurde aus der Datenbank gelöscht.");
+                }
+            }
+
+            await Server.PageAsync(context, "Firma löschen", html);
+        }
+
         #endregion
 
 
