@@ -73,7 +73,7 @@ namespace MelBoxCore
         private static void Gsm_StatusReportRecievedEvent(object sender, StatusReport e)
         {
 
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("SMS-Sendebestätigungs-Nr. intern: " + e.InternalReference);
             Console.ForegroundColor = ConsoleColor.Gray;
 

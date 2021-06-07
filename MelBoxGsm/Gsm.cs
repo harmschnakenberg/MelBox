@@ -88,8 +88,7 @@ namespace MelBoxGsm
 
             if ((Debug & (int)DebugCategory.GsmAnswer) > 0)
             {
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-                //Console.WriteLine(input.Replace(Environment.NewLine, "; "));
+                Console.ForegroundColor = ConsoleColor.DarkGreen;                
                 Console.WriteLine(input);
                 Console.ForegroundColor = ConsoleColor.Gray;
             }

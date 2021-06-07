@@ -677,10 +677,14 @@ namespace MelBoxWeb
                 {
                     Contact contact = Tab_Contact.SelectContact(deleteId);
 
-                    if (!Tab_Contact.Delete(contact))                    
-                        html = Html.Alert(2, "Löschen fehlgeschlagen", $"Löschen des Benutzers [{deleteId}] >{contact.Name}< fehlgeschlagen.");                    
+                    if (!Tab_Contact.Delete(deleteId))
+                        html = Html.Alert(2, "Löschen fehlgeschlagen", $"Löschen des Benutzers [{deleteId}] >{contact.Name}< fehlgeschlagen.");
                     else
-                        html = Html.Alert(1, "Benuter gelöscht", $"Der Benutzer [{deleteId}] >{contact.Name}< wurde aus der Datenbank gelöscht.");
+                    {
+                        string text = $"Der Benutzer [{deleteId}] >{contact.Name}< wurde durch [{user.Id}] >{user.Name}< aus der Datenbank gelöscht.";
+                        html = Html.Alert(1, "Benuter gelöscht", text);
+                        MelBoxSql.Tab_Log.Insert(Tab_Log.Topic.Database, 2, text);
+                    }
                 }
             }
 
@@ -990,9 +994,49 @@ namespace MelBoxWeb
         {
             System.Data.DataTable log = MelBoxSql.Tab_Log.SelectLast(1000);
             string table = Html.FromTable(log);
+            string date = DateTime.Now.AddDays(-14).ToShortDateString();
+            string html = $"<p><a href='/log/delete/{date}' class='w3-button w3-block w3-red w3-padding'>Einträge älter {date} löschen</a></p>\r\n";
 
-            await Server.PageAsync(context, "Log", table);
+            await Server.PageAsync(context, "Log", table + html);
         }
+
+        [RestRoute("Get", "/log/delete/{logDate}")]
+        public static async Task LoggingDelete(IHttpContext context)
+        {
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+
+            if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                await Home(context);
+                return;
+            }
+
+            bool isAdmin = user.Accesslevel >= Server.Level_Admin;
+            string html = string.Empty;
+
+            if (isAdmin)
+            {
+                var logDateStr = context.Request.PathParameters["logDate"];
+
+                if (DateTime.TryParse(logDateStr, out DateTime logDate))
+                {
+                    logDate = logDate.AddDays(-1); //Den Tag selbst nicht mehr löschen
+
+                    if (MelBoxSql.Tab_Log.Delete(logDate))
+                    {
+                        string text = $"Log-Einträge bis zum {logDate.ToShortDateString()} gelöscht durch [{user.Id}] >{user.Name}<.";
+                        html = Html.Alert(2, "Log-Einträge gelöscht.", text);
+                        Tab_Log.Insert(Tab_Log.Topic.Database, 2, text);
+                    }
+                }
+            }
+
+            System.Data.DataTable log = MelBoxSql.Tab_Log.SelectLast(1000);
+            string table = Html.FromTable(log);
+
+            await Server.PageAsync(context, "Log", html + table);
+        }
+
 
         [RestRoute("Get", "/gsm")]
         public static async Task ModemShow(IHttpContext context)

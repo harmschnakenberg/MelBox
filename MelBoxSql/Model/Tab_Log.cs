@@ -66,6 +66,14 @@ namespace MelBoxSql
             return Sql.Delete(TableName, ToDictionary(where));
         }
 
+        public static bool Delete(System.DateTime deleteUntil)
+        {
+            string query = $"DELETE FROM {TableName} WHERE {nameof(Log.LogTime)} < '{deleteUntil:yyyy-MM-dd HH:mm:ss}'";
+
+            return Sql.NonQuery(query, null);
+        }
+
+
         public static System.Data.DataTable Select(Log where)
         {
             Dictionary<string, object> columns = ToDictionary(where);

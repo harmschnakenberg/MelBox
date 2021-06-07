@@ -98,8 +98,9 @@ namespace MelBoxSql
             return Sql.Update(TableName, ToDictionary(set), ToDictionary(where));
         }
 
-        public static bool Delete(Contact where)
+        public static bool Delete(int contactId)
         {
+            Contact where = new Contact(contactId);
             return Sql.Delete(TableName, ToDictionary(where));
         }
 
