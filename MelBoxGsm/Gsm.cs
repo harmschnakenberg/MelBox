@@ -27,25 +27,6 @@ namespace MelBoxGsm
 
         public static int SimPin { get; set; } = 0000;
 
-        #region Konstanten
-        const string ctrlz = "\u001a";
-
-        //const string Answer_TextMode = "+CMGF: ";
-        const string Answer_Signal = "+CSQ: ";
-        const string Answer_SmsRead = "+CMGL: ";
-        const string Answer_SmsSent = "+CMGS: ";
-        const string Answer_NewStatusReport = "+CDSI: ";
-        public const string Answer_NewSms = "+CMTI: ";
-        const string Answer_MyPhoneNumber = "+CNUM: ";
-        const string Answer_ServiceCenterNumber = "+CSCA: ";
-        public const string Answer_NetworkRegistration = "+CREG: ";
-        const string Answer_ProviderName = "+COPS: ";
-        const string Answer_IncomingCallInfo = "+CLIP: ";
-        public const string Answer_SimSlot = "^SCKS: ";
-        const string Answer_Pin = "+CPIN: ";
-        const string Answer_CallRelay = "+CCFC: ";
-        #endregion
-
         private static bool Connect()
         {
             if (Port == null || !Port.IsOpen)
@@ -169,6 +150,11 @@ namespace MelBoxGsm
                     else if (line.Contains(Answer_CallRelay))
                     {
                         ParseCallRelay(line);
+                    }
+
+                    else if (line.StartsWith(Answer_Error))
+                    {
+                        ParseGsmError(line);
                     }
 
                 }

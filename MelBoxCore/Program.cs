@@ -7,7 +7,7 @@ namespace MelBoxCore
 {
     /*  Bugs:
      *  1)  Empfang SMS mit Sonderzeichen (°C, ö,Ä, ß, &, *) funktioniert jetzt.
-     * 
+     *  2)  Frage: WebServer auslagern in eigene EXE ?
      * 
      */
     
@@ -17,7 +17,7 @@ namespace MelBoxCore
         static void Main()
         {
             #region Programm hochfahren
-            Console.BufferHeight = 200; //Max. Zeilen in Console begrenzen
+            Console.BufferHeight = 300; //Max. Zeilen in Console begrenzen
             Console.WriteLine("Progammstart.");
             Ini.ReadIni();
             
@@ -29,32 +29,26 @@ namespace MelBoxCore
             Gsm.SmsSentFaildEvent += Gsm_SmsSentFaildEvent;
    
             Gsm.ModemSetup();
-            MelBoxWeb.GsmStatus.RelayNumber = Gsm.RelayCallsToPhone;
+            
             Gsm.Ask_RelayIncomingCalls(Gsm.RelayCallsToPhone); //Am Ende Rufumleitung, da Modem für ca. 2 Sek. beschäftigt.
 
             Tab_Log.Insert(Tab_Log.Topic.Startup, 3, "Programmstart");
             //*/
 #if DEBUG
-            Gsm.Debug = (int)Gsm.DebugCategory.GsmAnswer;
+            Gsm.Debug = 7;//(int)Gsm.DebugCategory.GsmRequest | (int)Gsm.DebugCategory.GsmAnswer | (int)Gsm.DebugCategory.GsmStatus ;
             Console.WriteLine("Debug: Es wird keine Info-Email beim Programmstart versendet.");
 #else
             Email.Send(new System.Net.Mail.MailAddressCollection() { Email.Admin }, DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") + " MelBox2 Programmstart", "Information von " + Environment.MachineName );
 #endif
 
             Console.WriteLine("Prüfe Datenbank: " + (Sql.CheckDb() ? "ok" : "Fehler") );            
-            //Console.WriteLine("*** STARTE WEBSERVER ***");
+
             MelBoxWeb.Server.Start();
             SetHourTimer();
             Gsm.SerialPortDisposed += Gsm_SerialPortDisposed;
             #endregion
 
             bool run = true;
-            bool restart = false;
-
-            //foreach (var url in MelBoxWeb.Server.Urls)
-            //{
-            //    Console.WriteLine(url);
-            //}
 
             Console.WriteLine("Beenden mit >Exit> - Für Hilfe: >Help<");
 
@@ -75,18 +69,6 @@ namespace MelBoxCore
                         break;
                     case "lese":
                         Gsm.Ask_SmsRead("ALL");
-                        break;
-                    case "web":
-                        if (words[1].ToLower() == "start")
-                            MelBoxWeb.Server.Start();
-                        if (words[1].ToLower() == "stop")
-                            MelBoxWeb.Server.Stop();
-                        break;
-                    case "timer":
-                        if (words[1].ToLower() == "start")
-                            MelBoxGsm.Gsm.SetTimer(true);
-                        if (words[1].ToLower() == "stop")
-                            MelBoxGsm.Gsm.SetTimer(false);
                         break;
                     case "email":
                         if (words[1].ToLower() == "test")
@@ -109,19 +91,11 @@ namespace MelBoxCore
                         if (words.Length > 1)
                         {
                             if (int.TryParse(words[1], out int debug))
+                            {
                                 Gsm.Debug = debug;
-                            Console.WriteLine("Debug = " + Gsm.Debug); 
+                                Console.WriteLine("Debug = " + Gsm.Debug);
+                            }
                         }
-                        break;
-                    case "restart":
-                        restart = true;
-                        run = false;
-                        break;
-                    case "umleitung":
-                        Gsm.Ask_DeactivateCallForewarding();
-                        break;
-                    case "help":
-                        ShowHelp();
                         break;
                     case "decode":
                         if (words.Length > 1)
@@ -129,6 +103,9 @@ namespace MelBoxCore
                             string ucs2 = words[1].Trim();
                             Console.WriteLine(Gsm.DecodeUcs2(ucs2));
                         }
+                        break;
+                    case "help":
+                        ShowHelp();
                         break;
                     default:
                         if (request.Length > 1)
@@ -140,9 +117,8 @@ namespace MelBoxCore
             Gsm.Ask_DeactivateCallForewarding();            
             MelBoxWeb.Server.Stop();
             Gsm.DisConnect();
-
-            if (restart) Main();
         }
+
 
         private static void Gsm_SerialPortDisposed(object sender, EventArgs e)
         {
@@ -170,11 +146,11 @@ namespace MelBoxCore
 
             Console.WriteLine("Email Test\tSendet eine Test-Email an den Admin.");
             Console.WriteLine("Sim Sms\tSimuliert den Empfang einer Sms.");
-            Console.WriteLine("Debug\tSetzt ein Debug-Word\t1: GsmAntwort - 2: GsmStatus");
-            Console.WriteLine("Web Start\tBedienoberfläche im Browser starten.");
-            Console.WriteLine("Web Stop\tBedienoberfläche im Browser beenden.");
-            Console.WriteLine("Timer Start\tMinütliche Abfrage nach SMS/Mobilfunkverbidnung starten.");
-            Console.WriteLine("Timer Stop\tMinütliche Abfrage nach SMS/Mobilfunkverbidnung beenden.");
+            Console.WriteLine("Debug\tSetzt ein Debug-Word\t" +
+                $"{Gsm.DebugCategory.GsmRequest}: {nameof(Gsm.DebugCategory.GsmRequest)} - " +
+                $"{Gsm.DebugCategory.GsmAnswer}: {nameof(Gsm.DebugCategory.GsmAnswer)} - " +
+                $"{Gsm.DebugCategory.GsmStatus}: {nameof(Gsm.DebugCategory.GsmStatus)}");
+
             Console.WriteLine("Decode\tUCS2-Encoded-Text umwandeln.");
             Console.WriteLine("*AT-Befehl*\tFührt einen AT-Befehl aus.");
         }

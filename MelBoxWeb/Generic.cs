@@ -217,10 +217,13 @@ namespace MelBoxWeb
                 int.TryParse(dt.Rows[i][6].ToString(), out int start);
                 int.TryParse(dt.Rows[i][7].ToString(), out int end);
 
+
                 if (holydays.Contains(date)) //Feiertag?
                     html += "<tr class='item w3-pale-red'>";                
                 else if (day == "Sa" || day == "So") //Wochenende ?              
                     html += "<tr class='item w3-sand'>";
+                else if (date == DateTime.Now.Date) //heute
+                    html += "<tr class='item w3-pale-green'>";
                 else                
                     html += "<tr class='item'>";
                 

@@ -18,8 +18,29 @@ namespace MelBoxGsm
             RelayCallEnabled,
             PinStatus,
             SimSlot,
-
+            ModemError
         }
+
+        #region Konstanten
+        const string ctrlz = "\u001a";
+
+        //const string Answer_TextMode = "+CMGF: ";
+        const string Answer_Signal = "+CSQ: ";
+        const string Answer_SmsRead = "+CMGL: ";
+        const string Answer_SmsSent = "+CMGS: ";
+        const string Answer_NewStatusReport = "+CDSI: ";
+        public const string Answer_NewSms = "+CMTI: ";
+        const string Answer_MyPhoneNumber = "+CNUM: ";
+        const string Answer_ServiceCenterNumber = "+CSCA: ";
+        public const string Answer_NetworkRegistration = "+CREG: ";
+        const string Answer_ProviderName = "+COPS: ";
+        const string Answer_IncomingCallInfo = "+CLIP: ";
+        public const string Answer_SimSlot = "^SCKS: ";
+        const string Answer_Pin = "+CPIN: ";
+        const string Answer_CallRelay = "+CCFC: ";
+        const string Answer_Error = "+CME ERROR: ";
+        #endregion
+
 
         public static ulong AdminPhone { get; set; } = 4916095285304;
         public static ulong RelayCallsToPhone { get; set; } = 4916095285304;
@@ -164,7 +185,7 @@ namespace MelBoxGsm
             {
                 //Write($"**61*+{phone}*11*05#");
                 Write("AT+CCFC=0,3,\"" + phone + "\", 145");
-                Console.WriteLine("Sprachanrufe werden umgeleitet an +" + phone);
+                Console.WriteLine("Beantrage Umleitung Sprachanrufe an +" + phone);
 
                 //Antwort ^SCCFC : <reason>, <status> (0: inaktiv, 1: aktiv), <class> [,.
                 //System.Threading.Thread.Sleep(4000); //Antwort abwarten - Antwort wird nicht ausgewertet.                
@@ -370,6 +391,27 @@ namespace MelBoxGsm
                 OnGsmStatusReceived(Modem.RelayCallEnabled, status);
             }
         }
+
+        // +CME ERROR: 10
+        private static void ParseGsmError(string input)
+        {
+            if (int.TryParse(input.Replace(Answer_Error, string.Empty), out int errorNo))
+            {
+                switch (errorNo)
+                {
+                    case 10:
+                        OnGsmStatusReceived(Modem.ModemError, "Keine SIM-Karte");
+                        break;
+                    case 11:
+                        OnGsmStatusReceived(Modem.ModemError, "PIN benötigt");
+                        break;
+                    default:
+                        OnGsmStatusReceived(Modem.ModemError, $"CME-Fehler {errorNo} () aufgetreten");
+                        break;
+                }
+            }
+        }
+
         #endregion
     }
 

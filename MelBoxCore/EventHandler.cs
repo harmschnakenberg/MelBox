@@ -43,7 +43,7 @@ namespace MelBoxCore
                 case Gsm.Modem.NetworkRegistration:
                     MelBoxWeb.GsmStatus.NetworkRegistration = e.Value.ToString();
                     if (e.Value.ToString() != "registriert")
-                        MelBoxSql.Tab_Log.Insert(Tab_Log.Topic.Gsm, 2, "Mobilfunknetz: " + e.Value);
+                        MelBoxSql.Tab_Log.Insert(Tab_Log.Topic.Gsm, 1, "Mobilfunknetz: " + e.Value);
                     break;
                 case Gsm.Modem.ProviderName:
                     MelBoxWeb.GsmStatus.ProviderName = e.Value.ToString();
@@ -55,15 +55,25 @@ namespace MelBoxCore
                     break;
                 case Gsm.Modem.RelayCallEnabled:
                     if ((bool)e.Value)
-                        Tab_Log.Insert(Tab_Log.Topic.Gsm, 3, "Sprachanrufe werden umgeleitet an +" + Gsm.RelayCallsToPhone);
+                    {
+                        MelBoxWeb.GsmStatus.RelayNumber = Gsm.RelayCallsToPhone;
+                        Tab_Log.Insert(Tab_Log.Topic.Gsm, 3, "Sprachanrufe werden umgeleitet an +" + Gsm.RelayCallsToPhone);                        
+                    }
                     else
                     {
-                        Tab_Log.Insert(Tab_Log.Topic.Gsm, 2, "Keine Umleitung von Sprachanrufen an +" + Gsm.RelayCallsToPhone);
+                        Tab_Log.Insert(Tab_Log.Topic.Gsm, 1, "Keine Umleitung von Sprachanrufen an +" + Gsm.RelayCallsToPhone);
                         Gsm.Ask_RelayIncomingCalls(Gsm.RelayCallsToPhone);
                     }
                     break;
                 case Gsm.Modem.PinStatus:
                     MelBoxWeb.GsmStatus.PinStatus = e.Value.ToString();
+                    break;
+                case Gsm.Modem.ModemError:
+                    MelBoxWeb.GsmStatus.LastError = DateTime.Now.ToLongTimeString() + " - " + e.Value.ToString();
+                    Tab_Log.Insert(Tab_Log.Topic.Gsm, 2, "Fehler an Modem: " + e.Value);
+                    break;
+                case Gsm.Modem.SimSlot:
+                    //BAUSTELLE
                     break;
                 default:
                     break;

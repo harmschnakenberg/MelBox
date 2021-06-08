@@ -136,5 +136,6 @@ namespace MelBoxWeb
         public static string ProviderName { get; set; } = init; //Netzbetreibername z.B. Telekom
         public static ulong RelayNumber { get; set; } = 0; //Nummer, an die Sprachanrufe weitergeleitet werden.
         public static string PinStatus { get; set; } = init; //Gibt an, ob die PIN richtig gesetzt ist
+        public static string LastError { get; set; } = init; //Eine beschreibung des zuletzt am Modem aufgetretenen Fehlers
     }
 }

@@ -1002,10 +1002,20 @@ namespace MelBoxWeb
         [RestRoute("Get", "/log")]
         public static async Task LoggingShow(IHttpContext context)
         {
-            System.Data.DataTable log = MelBoxSql.Tab_Log.SelectLast(1000);
+            #region Anfragenden Benutzer identifizieren
+            Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
+            bool isAdmin = false;
+
+            if (guid != null && Server.LogedInHash.TryGetValue(guid, out Contact user))
+            {
+                isAdmin = user.Accesslevel >= Server.Level_Admin;
+            }
+            #endregion
+
+            System.Data.DataTable log = MelBoxSql.Tab_Log.SelectLast(Sql.MaxSelectedRows);
             string table = Html.FromTable(log);
             string date = DateTime.Now.AddDays(-14).ToShortDateString();
-            string html = $"<p><a href='/log/delete/{date}' class='w3-button w3-block w3-red w3-padding'>Einträge älter {date} löschen</a></p>\r\n";
+            string html = !isAdmin ? string.Empty : $"<p><a href='/log/delete/{date}' class='w3-button w3-block w3-red w3-padding'>Einträge älter {date} löschen</a></p>\r\n";
 
             await Server.PageAsync(context, "Log", table + html);
         }
@@ -1038,10 +1048,14 @@ namespace MelBoxWeb
                         html = Html.Alert(2, "Log-Einträge gelöscht.", text);
                         Tab_Log.Insert(Tab_Log.Topic.Database, 2, text);
                     }
+                    else
+                    {
+                        html = Html.Alert(3, "Keine Log-Einträge gelöscht.", "Keine passenden Einträge zum löschen gefunden.");
+                    }
                 }
             }
 
-            System.Data.DataTable log = MelBoxSql.Tab_Log.SelectLast(1000);
+            System.Data.DataTable log = MelBoxSql.Tab_Log.SelectLast(Sql.MaxSelectedRows);
             string table = Html.FromTable(log);
 
             await Server.PageAsync(context, "Log", html + table);
@@ -1058,7 +1072,8 @@ namespace MelBoxWeb
                 { "##ServiceCenter##", GsmStatus.ServiceCenterNumber },
                 { "##ProviderName##" , GsmStatus.ProviderName },
                 { "##RelayNumber##" , "+" + GsmStatus.RelayNumber.ToString() },
-                { "##PinStatus##" , GsmStatus.PinStatus }
+                { "##PinStatus##" , GsmStatus.PinStatus },
+                { "##ModemError##", GsmStatus.LastError }
             };
 
             string html = Server.Page(Server.Html_FormGsm, pairs);
