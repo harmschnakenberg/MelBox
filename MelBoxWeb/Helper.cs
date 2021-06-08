@@ -104,7 +104,7 @@ namespace MelBoxWeb
 
             if (id > 0)
             {
-                while (LogedInHash.Count > 20) //Max. 20 Benutzer gleichzetig eingelogged
+                while (LogedInHash.Count > 10) //Max. 10 Benutzer gleichzetig eingelogged
                 {
                     LogedInHash.Remove(LogedInHash.Keys.GetEnumerator().Current);
                 }

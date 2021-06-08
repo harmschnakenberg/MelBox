@@ -973,14 +973,24 @@ namespace MelBoxWeb
             if (guid.Length > 0)
             {
                 prio = 3;
-                titel = "Login erfolgreich";
-                text = "Willkommen " + name;
+                titel = "Login ";
+                string level = "Beobachter";
+                
 
                 System.Net.Cookie cookie = new System.Net.Cookie("MelBoxId", guid, "/");
 
                 context.Response.Cookies.Add(cookie);
 
-                MelBoxSql.Tab_Log.Insert(Tab_Log.Topic.Web, 3, $"Login Benutzer >{name}<");
+                if (Server.LogedInHash.TryGetValue(guid, out Contact user))
+                {                    
+                    if (user.Accesslevel >= Server.Level_Admin)
+                        level = "Admin";
+                    else if (user.Accesslevel >= Server.Level_Reciever)
+                        level = "Benutzer";                    
+                }
+
+                text = $"Willkommen {level} {name}";
+                MelBoxSql.Tab_Log.Insert(Tab_Log.Topic.Web, 3, $"Login {level} >{name}<");
             }
 
             string alert = Html.Alert(prio, titel, text);
