@@ -45,17 +45,42 @@ namespace MelBoxCore
             return permanentRecievers;
         }
 
+        /// <summary>
+        /// Sende Email an einen Empfänger.
+        /// Sendungsverfolung wird nicht in der Datenbank protokolliert.
+        /// </summary>
+        /// <param name="to">Empfänger der Email</param>
+        /// <param name="message">Inhalt der Email</param>
+        /// <param name="subject">Betreff. Leer: Wird aus message generiert.</param>
+        /// <param name="sendCC">Sende an Ständige Empänger in CC</param>
+        public static void Send(MailAddress to, string message, string subject = "", bool sendCC = true)
+        {
+            var toList = new MailAddressCollection { to };
 
-        public static void Send (MailAddressCollection toList, string message, string subject = "", bool sendCC = true)
+            Send(toList, message, subject, 0, sendCC);
+        }
+
+        /// <summary>
+        /// Sende Email an eine Empängerliste.        
+        /// </summary>
+        /// <param name="toList">Empfängerliste</param>
+        /// <param name="message">Inhalt der Email</param>
+        /// <param name="subject">Betreff. Leer: Wird aus message generiert.</param>
+        /// <param name="emailId">Id zur Protokollierung der Sendungsverfolgung in der Datenbank</param>
+        /// <param name="sendCC">Sende an Ständige Empänger in CC</param>
+        public static void Send (MailAddressCollection toList, string message, string subject = "", int emailId = 0, bool sendCC = true)
         {
             Console.WriteLine("Sende Email: " + message);
 
-            try
-            {
-                MailMessage mail = new MailMessage();
+            if (emailId == 0) emailId = (int)(DateTime.UtcNow.Ticks % int.MaxValue);
 
+            MailMessage mail = new MailMessage(); 
+
+            try
+            {                
                 #region From
                 mail.From = From;
+                mail.Sender = From;
                 #endregion
 
                 #region To               
@@ -96,44 +121,86 @@ namespace MelBoxCore
                 #endregion
 
                 #region Smtp
+                //Siehe https://docs.microsoft.com/de-de/dotnet/api/system.net.mail.smtpclient.sendasync?view=net-5.0
+
                 using var smtpClient = new SmtpClient();
-                //smtpClient.SendCompleted += SmtpClient_SendCompleted;               
+             
                 smtpClient.Host = SmtpHost;
                 smtpClient.Port = SmtpPort;
-
-                //smtpClient.UseDefaultCredentials = true;
-
+                
                 if (SmtpUser.Length > 0 && SmtpPassword.Length > 0) 
                     smtpClient.Credentials = new System.Net.NetworkCredential(SmtpUser, SmtpPassword);
+                
+                //smtpClient.UseDefaultCredentials = true;
 
                 smtpClient.EnableSsl = SmtpEnableSSL;
 
                 smtpClient.Send(mail);
-                //smtpClient.SendCompleted -= SmtpClient_SendCompleted;
-                #endregion
 
+                //smtpClient.SendCompleted += SmtpClient_SendCompleted;  
+                //smtpClient.SendAsync(mail, emailId); //emailId = Zufallszahl größer 255 (Sms-Ids können zwischen 0 bis 255 liegen)
+                #endregion
+            }
+            catch (SmtpFailedRecipientsException ex)
+            {
+                for (int i = 0; i < ex.InnerExceptions.Length; i++)
+                {
+                    SmtpStatusCode status = ex.InnerExceptions[i].StatusCode;
+                    if (status == SmtpStatusCode.MailboxBusy ||
+                        status == SmtpStatusCode.MailboxUnavailable)
+                    {
+                        MelBoxSql.Tab_Log.Insert(MelBoxSql.Tab_Log.Topic.Email, 1, $"Senden der Email [{emailId}] fehlgeschlagen. Neuer Sendeversuch.");
+                        MelBoxSql.Tab_Sent.UpdateSendStatus(emailId, MelBoxSql.Tab_Sent.Confirmation.RetrySending);
+
+                        System.Threading.Thread.Sleep(5000);
+                        using var smtpClient = new SmtpClient();
+                        smtpClient.Send(mail);
+                    }
+                    else
+                    {
+                        MelBoxSql.Tab_Log.Insert(MelBoxSql.Tab_Log.Topic.Email, 1, $"Fehler beim Senden der Email [{emailId}] an >{ex.InnerExceptions[i].FailedRecipient}<: {ex.InnerExceptions[i].Message}");
+                        MelBoxSql.Tab_Sent.UpdateSendStatus(emailId, MelBoxSql.Tab_Sent.Confirmation.AbortedSending);
+                    }
+
+                }
             }
             catch (System.Net.Mail.SmtpException ex_smtp)
             {
-                Console.BackgroundColor = ConsoleColor.Yellow;
-                Console.ForegroundColor = ConsoleColor.Black;
-                Console.WriteLine("Fehler beim Versenden einer Email: " + ex_smtp.Message);
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.Gray;
+                MelBoxSql.Tab_Log.Insert(MelBoxSql.Tab_Log.Topic.Email, 1, "Fehler beim Versenden einer Email: " + ex_smtp.Message);
             }
             catch (Exception ex)
             {
                 throw ex;
             }
+
+            MelBoxSql.Tab_Sent.UpdateSendStatus(emailId, MelBoxSql.Tab_Sent.Confirmation.SentSuccessful);
+            mail.Dispose();
         }
 
-        //private static void SmtpClient_SendCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
-        //{
-        //    smtpClient.SendCompleted -= SmtpClient_SendCompleted;
-        //    Console.WriteLine("Email versendet: " + e.UserState + Environment.NewLine + e.Error);
-        //}
+        /// <summary>
+        /// Nur bei Asynchronem Versenden von Mails - löschen?
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private static void SmtpClient_SendCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        {
+            int emailId = (int)e.UserState;
 
-
+            if (e.Cancelled)
+            {
+                MelBoxSql.Tab_Log.Insert(MelBoxSql.Tab_Log.Topic.Email, 1, $"Senden der Email [{emailId}] abgebrochen.");
+                MelBoxSql.Tab_Sent.UpdateSendStatus(emailId, MelBoxSql.Tab_Sent.Confirmation.AbortedSending);
+            }
+            if (e.Error != null)
+            {
+                MelBoxSql.Tab_Log.Insert(MelBoxSql.Tab_Log.Topic.Email, 1, $"Fehler beim Senden der Email [{emailId}]: {e.Error}");
+                MelBoxSql.Tab_Sent.UpdateSendStatus(emailId, MelBoxSql.Tab_Sent.Confirmation.AbortedSending);
+            }
+            else
+            {
+                MelBoxSql.Tab_Sent.UpdateSendStatus(emailId, MelBoxSql.Tab_Sent.Confirmation.SentSuccessful);
+            }
+        }
 
     }
 }

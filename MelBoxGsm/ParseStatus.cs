@@ -138,7 +138,51 @@ namespace MelBoxGsm
 
                 //Abfrage Rufweiterleitung aktiv?
                 Write("AT+CCFC=0,2");
+
+                Gsm.Ask_RelayIncomingCalls(Gsm.RelayCallsToPhone);
             }
+        }
+
+        public static void SimCardDetected()
+        {
+            //SIM-Karte gesperrt?
+            Write("AT+CPIN?");
+
+            //Signalqualität
+            Ask_SignalQuality();
+
+            //Eigene Telefonnumer-Nummer der SIM-Karte auslesen 
+            Write("AT+CNUM");
+
+            //Im Netzwerk Registriert?
+            Ask_NetworkRegistration();
+
+            //ProviderName?
+            Write("AT+COPS?");
+
+            //SMS-Service-Center Adresse
+            Write("AT+CSCA?");
+
+            //Alle Speicher nutzen
+            Write("AT+CPMS=\"MT\",\"MT\",\"MT\"");
+
+            //Sendeempfangsbestätigungen abonieren
+            //Quelle: https://www.codeproject.com/questions/271002/delivery-reports-in-at-commands
+            //Quelle: https://www.smssolutions.net/tutorials/gsm/sendsmsat/
+            //AT+CSMP=<fo> [,  <vp> / <scts> [,  <pid> [,  <dcs> ]]]
+            // <fo> First Octet:
+            // <vp> Validity-Period: 0 - 143 (vp+1 x 5min), 144 - 167 (12 Hours + ((VP-143) x 30 minutes)), [...]
+            Write("AT+CSMP=49,1,0,0");
+
+            Write("AT+CNMI=2,1,2,2,1");
+            //erfolgreich getestet: AT+CNMI=2,1,2,2,1
+
+            //Sprachanrufe:
+            //Display unsolicited result codes
+            Write("AT+CLIP=1");
+
+            //Abfrage Rufweiterleitung aktiv?
+            Write("AT+CCFC=0,2");
         }
 
         public static void Ask_DeactivateCallForewarding()
@@ -351,9 +395,9 @@ namespace MelBoxGsm
             string[] sim = input.Replace(Answer_SimSlot, string.Empty).Split(',');
 
             if (sim[sim.Length - 1].Trim() == "1")            
-                OnGsmStatusReceived(Modem.SimSlot, "SIM-Schubfach: SIM-Karte erkannt");            
+                OnGsmStatusReceived(Modem.SimSlot, true);             //"SIM-Schubfach: SIM-Karte erkannt"
             else            
-                OnGsmStatusReceived(Modem.SimSlot, "SIM-Schubfach: SIM-Karte nicht erkannt");            
+                OnGsmStatusReceived(Modem.SimSlot, false);            //"SIM-Schubfach: SIM-Karte nicht erkannt"
         }
 
         // +CPIN: READY                         //BAUSTELLE: nicht ausreichend getestet
@@ -404,6 +448,15 @@ namespace MelBoxGsm
                         break;
                     case 11:
                         OnGsmStatusReceived(Modem.ModemError, "PIN benötigt");
+                        break;
+                    case 13:
+                        OnGsmStatusReceived(Modem.ModemError, "SIM-Fehler");
+                        break;
+                    case 30:
+                        OnGsmStatusReceived(Modem.ModemError, "Mobilnetz nicht verfügbar");
+                        break;
+                    case 100:
+                        OnGsmStatusReceived(Modem.ModemError, "Unbekannter Fehler");
                         break;
                     default:
                         OnGsmStatusReceived(Modem.ModemError, $"CME-Fehler {errorNo} () aufgetreten");

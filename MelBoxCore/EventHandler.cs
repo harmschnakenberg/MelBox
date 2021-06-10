@@ -74,6 +74,11 @@ namespace MelBoxCore
                     break;
                 case Gsm.Modem.SimSlot:
                     //BAUSTELLE
+                    if ((bool)e.Value)
+                    {
+                        Console.WriteLine("SIM-Karte erkannt.");
+                        Gsm.SimCardDetected();
+                    }
                     break;
                 default:
                     break;
@@ -106,7 +111,7 @@ namespace MelBoxCore
                     $"Senden durch Mobilfunknetzbetreiber abgebrochen! Empfänger empfangsbereit?";
 
                 MelBoxSql.Tab_Log.Insert(Tab_Log.Topic.Gsm, 1, $"SMS konnte nicht an >{e.Reciever}< versendet werden: {e.Message}");
-                Email.Send(null, email, $"Sendefehler >{e.Reciever}<");
+                Email.Send(Email.Admin, email, $"Sendefehler >{e.Reciever}<");
             }
             else if (gsmSendStatus > 31)
                 confirmation = Tab_Sent.Confirmation.RetrySending;
@@ -168,7 +173,10 @@ namespace MelBoxCore
 
             MailAddressCollection emailRecievers = new MailAddressCollection();
             string emailSuffix = string.Empty;
-                        
+
+            Random ran = new Random();
+            int emailId = ran.Next(256, int.MaxValue); // Pseudo-Id für Sendungsverfolgung
+
             if (e.Message.ToLower().Trim() == SmsWayValidationTrigger.ToLower()) // SmsAbruf?
             {
                 #region Meldelinientest 'SmsAbruf'
@@ -207,7 +215,8 @@ namespace MelBoxCore
 
                         Sent sent = new Sent(shift.ContactId, messageId, Tab_Contact.Communication.Email)
                         {
-                            Confirmation = Tab_Sent.Confirmation.Unknown,
+                            Confirmation = Tab_Sent.Confirmation.AwaitingRefernece,
+                            Reference = emailId,
                             SentTime = DateTime.UtcNow
                         };
 
@@ -243,7 +252,7 @@ namespace MelBoxCore
             //Emails an Bereitschaft und ständige Empfänger senden.
             string subject = $"SMS-Eingang >{MelBoxSql.Tab_Contact.SelectName_Company_City(fromId)}<, Text >{e.Message}<"; 
             string body = $"Absender >{e.Sender}<\r\nText >{e.Message}<\r\nSendezeit >{e.TimeUtc.ToLocalTime().ToLongTimeString()}<\r\n" + emailSuffix;
-            Email.Send(emailRecievers, body, subject);
+            Email.Send(emailRecievers, body, subject, emailId);
 
             #endregion
         }
@@ -263,7 +272,7 @@ namespace MelBoxCore
                 log = $"Neuen Benutzer [{fromId}] angelegt mit Absender >{phone}< Nachricht: >{log}<";
 
                 Tab_Log.Insert(Tab_Log.Topic.Database, 2, log);
-                Email.Send(null, log, "Unbekannter Absender: Benutzer angelegt.", false);
+                Email.Send(Email.Admin, log, "Unbekannter Absender: Benutzer angelegt.");
             }
 
             #if DEBUG

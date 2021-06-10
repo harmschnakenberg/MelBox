@@ -92,7 +92,7 @@ namespace MelBoxGsm
                     catch (Exception exception)
                     {
                         Console.WriteLine("ContinuousRead(): Lesefehler Bitstream von COM-Port:\r\n" + 
-                            ">" + buffer.ToString().Trim() + "<" + Environment.NewLine +
+                            ">" + System.Text.Encoding.UTF8.GetString(buffer) + "<" + Environment.NewLine +
                             exception.GetType() + Environment.NewLine + 
                             exception.Message + Environment.NewLine + 
                             exception.InnerException + Environment.NewLine + 

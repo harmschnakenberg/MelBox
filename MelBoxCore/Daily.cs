@@ -111,7 +111,7 @@ namespace MelBoxCore
 
                 string text = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") + $" Inaktivität >{name}<, >{company}<. Meldung fällig seit >{due}<. Melsys bzw. Segno vor Ort prüfen.";
 
-                Email.Send(null, text, $"Inaktivität >{name}<, >{company}<");
+                Email.Send(Email.Admin, text, $"Inaktivität >{name}<, >{company}<");
             }
 
             //Starte Timer erneut

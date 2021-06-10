@@ -27,10 +27,12 @@ namespace MelBoxCore
             Gsm.StatusReportRecievedEvent += Gsm_StatusReportRecievedEvent;
             Gsm.SmsSentEvent += Gsm_SmsSentEvent;
             Gsm.SmsSentFaildEvent += Gsm_SmsSentFaildEvent;
-   
+
+
+
             Gsm.ModemSetup();
-            
-            Gsm.Ask_RelayIncomingCalls(Gsm.RelayCallsToPhone); //Am Ende Rufumleitung, da Modem für ca. 2 Sek. beschäftigt.
+            //Gsm.Ask_RelayIncomingCalls(Gsm.RelayCallsToPhone);
+
 
             Tab_Log.Insert(Tab_Log.Topic.Startup, 3, "Programmstart");
             //*/
@@ -72,7 +74,7 @@ namespace MelBoxCore
                         break;
                     case "email":
                         if (words[1].ToLower() == "test")
-                            Email.Send(new System.Net.Mail.MailAddressCollection() { Email.Admin }, "Test-Email von MelBox2");
+                            Email.Send(Email.Admin, "Test-Email von MelBox2");
                         break;
                     case "sim":
                         if (words[1].ToLower() == "sms")
@@ -134,7 +136,7 @@ namespace MelBoxCore
                             $"Senden abgebrochen. Kein erneuter Sendeversuch an Empfänger.";
 
             MelBoxSql.Tab_Log.Insert(Tab_Log.Topic.Gsm, 1, Text.Replace("\r\n", " "));
-            Email.Send(null, Text, "Senden fehlgeschlagen: " + e.Message);
+            Email.Send(Email.Admin, Text, "Senden fehlgeschlagen: " + e.Message);
         }
 
         private static void ShowHelp()

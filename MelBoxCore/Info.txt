@@ -1,0 +1,13 @@
+﻿MelBox2 ReadMe
+
+Bugs
+-----
+1)	Empfangsbestätigung bei versendeten SMS?
+2)	Regel 4 von MelBox nicht umgesetzt (Nachrichten werdne einzeln gesperrt). Nachpflegen?
+3)	SMS mit Sonderzeichen (°C, ö,Ä, ß, &, *). ERLEDIGT
+
+ToDo
+-----
+1)	Vieleicht Web-Oberfläche in eigene EXE auslagern?
+2)	Ist Emails empfangen sinnvoll?
+3)	Emails können zur Zeit nur ohne Empfangsbestätigung versand werden, da kein Empfang implementiert ist.
