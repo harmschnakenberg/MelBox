@@ -12,6 +12,7 @@ namespace MelBoxCore
         #region Properties
         public static string SmsWayValidationTrigger { get; set; } = "SMSAbruf";
 
+        private static string LastModemError = string.Empty; //Für Modem-Fehler nur einmal im Log aufzeichnen.
         #endregion
 
         private static void Gsm_GsmStatusReceived(object sender, GsmStatusArgs e)
@@ -70,10 +71,14 @@ namespace MelBoxCore
                     break;
                 case Gsm.Modem.ModemError:
                     MelBoxWeb.GsmStatus.LastError = DateTime.Now.ToLongTimeString() + " - " + e.Value.ToString();
-                    Tab_Log.Insert(Tab_Log.Topic.Gsm, 2, "Fehler an Modem: " + e.Value);
+
+                    if (LastModemError.Length == 0 || LastModemError != e.Value.ToString())
+                    {
+                        Tab_Log.Insert(Tab_Log.Topic.Gsm, 2, "Fehler an Modem: " + e.Value);
+                        LastModemError = e.Value.ToString(); //Fehler nur einmal im Log aufzeichnen.
+                    }
                     break;
                 case Gsm.Modem.SimSlot:
-                    //BAUSTELLE
                     if ((bool)e.Value)
                     {
                         Console.WriteLine("SIM-Karte erkannt.");

@@ -225,6 +225,9 @@ namespace MelBoxGsm
             //Rufumleitung BAUSTELLE: nicht ausreichend getestet //            
             // Write("ATD*61*" + phone + "*10#;");
 
+#if DEBUG
+            Console.WriteLine("Debug: Keine Rufumleitung auf anderes Telefon!");
+#else
             if (phone > 0)
             {
                 //Write($"**61*+{phone}*11*05#");
@@ -234,10 +237,11 @@ namespace MelBoxGsm
                 //Antwort ^SCCFC : <reason>, <status> (0: inaktiv, 1: aktiv), <class> [,.
                 //System.Threading.Thread.Sleep(4000); //Antwort abwarten - Antwort wird nicht ausgewertet.                
             }
+#endif
         }
-        #endregion
+#endregion
 
-        #region Auslesen
+#region Auslesen
         // +CSQ: 20,99
         private static void ParseSignalQuality(string input)
         {
@@ -298,6 +302,8 @@ namespace MelBoxGsm
             string name = items[0].Trim('"');
             string number = items[1].Trim('"');
 
+            if (name.StartsWith("00")) name = DecodeUcs2(name); // hex? -> Encoding in Ucs2
+
             OnGsmStatusReceived(Modem.OwnName, name);
             OnGsmStatusReceived(Modem.OwnPhoneNumber, number);
         }
@@ -353,6 +359,8 @@ namespace MelBoxGsm
                 .Split(',');
 
             string number = items[0].Trim('"');
+            if (number.StartsWith("002B")) number = DecodeUcs2(number); // hex '002B' = '+' -> Encoding in Ucs2
+
             OnGsmStatusReceived(Modem.ServiceCenterNumber, number);
         }
 
@@ -452,6 +460,9 @@ namespace MelBoxGsm
                     case 13:
                         OnGsmStatusReceived(Modem.ModemError, "SIM-Fehler");
                         break;
+                    case 25:
+                        OnGsmStatusReceived(Modem.ModemError, "Ungültiges Zeichen");
+                        break;
                     case 30:
                         OnGsmStatusReceived(Modem.ModemError, "Mobilnetz nicht verfügbar");
                         break;
@@ -465,7 +476,7 @@ namespace MelBoxGsm
             }
         }
 
-        #endregion
+#endregion
     }
 
     public class GsmStatusArgs : EventArgs

@@ -131,18 +131,25 @@ namespace MelBoxGsm
         /// <param name="data"></param>
         public virtual void OnDataReceived(byte[] data)
         {
-            string rec = System.Text.Encoding.UTF8.GetString(data);
-            recLine += rec;
-
-            //Melde empfangne Daten, wenn...
-            if (recLine.Contains(Terminator) || recLine.EndsWith("\r\n") || recLine.Contains("ERROR")) //
+            try
             {
-                var handler = DataReceived;
-                if (handler != null)
+                string rec = System.Text.Encoding.UTF8.GetString(data);
+                recLine += rec;
+
+                //Melde empfangne Daten, wenn...
+                if (recLine.Contains(Terminator) || recLine.EndsWith("\r\n") || recLine.Contains("ERROR")) //
                 {
-                    handler(this, new DataReceivedArgs { Data = recLine });
-                    recLine = string.Empty;
+                    var handler = DataReceived;
+                    if (handler != null)
+                    {
+                        handler(this, new DataReceivedArgs { Data = recLine.Normalize() });
+                        recLine = string.Empty;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 

@@ -82,11 +82,13 @@ namespace MelBoxGsm
         //+CMGL: 1,"REC READ",6               , 34,                      ,   ,"20/11/06,16:08:45+04","20/11/06,16:08:50+04",0
         private static void ParseTextMessage(string input)
         {
-            string[] list = input.Split(new string[] { Answer_SmsRead }, StringSplitOptions.RemoveEmptyEntries);
+            string[] msgs = input.Split(new string[] { Answer_SmsRead }, StringSplitOptions.RemoveEmptyEntries);
+
+            Console.WriteLine($"Roh-SMS: {msgs.Length} Roh-Smsen gelesen.");
 
             try
             {
-                foreach (string msg in list)
+                foreach (string msg in msgs)
                 {
                     if (msg.StartsWith("AT+CMGL")) continue; // erste Zeile
 
@@ -94,11 +96,16 @@ namespace MelBoxGsm
                         .Replace("\r\n", "\n")
                         .Split('\n');
 
+                    Console.WriteLine($"Roh-SMS: {lines.Length} Zeilen.");
+
                     string[] header = lines[0]
                         .Split(',');
 
+                    Console.WriteLine($"Roh-SMS-Kopf: {header.Length} Einträge.");
+
                     //<index> Index
-                    int.TryParse(header[(int)HeaderSms.Index], out int index);
+                    if (!int.TryParse(header[(int)HeaderSms.Index], out int index))
+                        continue; //Beginnt niocht mit einer Speicherplatz-Nummer: kein gültiges Format
 
                     //[<alpha>] PhoneBookentry für <oa>/<da> | <mr> MessageReference
                     if (int.TryParse(header[(int)HeaderStatusReport.MessageReference], out int reference))
@@ -118,8 +125,8 @@ namespace MelBoxGsm
                 }
             }
             catch (Exception ex)
-            {
-                throw ex;
+            {                
+                throw new Exception($"### FEHLER ParseTextMessage()\r\n{ex.GetType()}\r\n{ex.Message}");
             }
 
         }
@@ -136,6 +143,7 @@ namespace MelBoxGsm
 
             //<oa>/<da> OriginatingAddress/ DestinationAddress | <fo> First Oxctet
             string sender = header[(int)HeaderSms.Sender].Trim('"');
+            if (sender.StartsWith("002B")) sender = DecodeUcs2(sender); // hex 002B = '+'; Encoding in Ucs2
 
             //[<alpha>] PhoneBookentry für <oa>/<da> | <mr> MessageReference
             int.TryParse(header[(int)HeaderStatusReport.MessageReference], out int reference);
@@ -177,61 +185,80 @@ namespace MelBoxGsm
         private static void ParseNewSms(string[] header, string[] line)
         {
             //Dies ist vorher festgestellt als eine SMS-Nachricht
-
-            //<index> Index
-            int.TryParse(header[(int)HeaderSms.Index], out int index);
-
-            //<stat> Status
-            string status = header[(int)HeaderSms.MessageStatus].Trim('"');
-
-            //<oa>/<da> OriginatingAddress/ DestinationAddress | <fo> First Oxctet
-            string sender = header[(int)HeaderSms.Sender].Trim('"');
-
-            //[<alpha>] PhoneBookentry für <oa>/<da>
-            string SenderPhoneBookEntry = header[3].Trim('"');
-
-            //[<scts>] Service Centre Time Stamp | [<ra>] Recipient Address
-            DateTime TimeUtc = ParseUtcTime(header[4].Trim('"'), header[5].Trim('"'));
-
-            string messageText = string.Empty;
-
-            for (int i = 1; i < line.Length; i++)
+            try
             {
-                if (line[i] == "OK") break; //und OK-Ausgabe am Ende nicht speichern
-                if (line[i].Length == 0) continue; // keine Leerzeilen 
-                messageText += line[i] + " ";
+#if DEBUG
+                foreach (var item in header)
+                {
+                    Console.WriteLine($">{item}<");
+                }
+                Console.WriteLine("Header.length = " + header.Length);
+#endif
+
+                if (header.Length < 5) return; //Ungültiger Header!
+
+                //<index> Index
+                int.TryParse(header[(int)HeaderSms.Index], out int index);
+
+                //<stat> Status
+                string status = header[(int)HeaderSms.MessageStatus].Trim('"');
+
+                //<oa>/<da> OriginatingAddress/ DestinationAddress | <fo> First Oxctet
+                string sender = header[(int)HeaderSms.Sender].Trim('"');
+
+                //[<alpha>] PhoneBookentry für <oa>/<da>
+                string SenderPhoneBookEntry = header[3].Trim('"');
+
+                //[<scts>] Service Centre Time Stamp | [<ra>] Recipient Address
+                DateTime TimeUtc = ParseUtcTime(header[4].Trim('"'), header[5].Trim('"'));
+
+                string messageText = string.Empty;
+
+                for (int i = 1; i < line.Length; i++)
+                {
+                    if (line[i] == "OK") break; //und OK-Ausgabe am Ende nicht speichern
+                    if (line[i].Length == 0) continue; // keine Leerzeilen 
+                    messageText += line[i] + " ";
+                }
+
+                messageText = messageText.Trim();
+
+                if (!messageText.StartsWith("00") && messageText.Length > 20) //Kein Leerzeichen, startet mit '00' und lang: Vermutung Sms-Inhalt ist in UCS2 Formatiert wegen Sonderzeichen z.B. °C, ä, ß...            
+                    messageText = DecodeUcs2(messageText);
+                //else
+                //{
+                //    messageText = DecodeGsm(messageText); // schmeißt Exception
+                //}
+
+                ParseSms sms = new ParseSms
+                {
+                    RawHeader = line[0],
+                    Index = index,
+                    MessageStatus = status,
+                    Sender = sender,
+                    SenderPhonebookEntry = SenderPhoneBookEntry,
+                    TimeUtc = TimeUtc,
+                    Message = messageText // Sinnvoll?
+                };
+
+
+                // if (header.Length > 5) // Letzte werden beim MC75 nicht ausgegeben
+                // {
+                //     int.TryParse(header[6], out int numberTypeInt);
+
+                //     int.TryParse(header[7], out int textLength);
+
+                //    
+                //     sms.MessageLength = textLength;
+                //     sms.PhoneNumberType = numberTypeInt;
+                //}
+
+                SmsRecievedEvent?.Invoke(null, sms);
             }
-
-            messageText = messageText.Trim();
-
-            if (!messageText.Contains(" ") && messageText.Length > 20) //Kein Leerzeichen und lang: Vermutung Sms-Inhalt ist in UCS2 Formatiert wegen Sonderzeichen z.B. °C, ä, ß...            
-                messageText = DecodeUcs2(messageText);
-            
-            ParseSms sms = new ParseSms
+            catch (Exception ex)
             {
-                RawHeader = line[0],
-                Index = index,
-                MessageStatus = status,
-                Sender = sender,
-                SenderPhonebookEntry = SenderPhoneBookEntry,
-                TimeUtc = TimeUtc,
-                Message = messageText // Sinnvoll?
-            };
-
-
-            // if (header.Length > 5) // Letzte werden beim MC75 nicht ausgegeben
-            // {
-            //     int.TryParse(header[6], out int numberTypeInt);
-
-            //     int.TryParse(header[7], out int textLength);
-
-            //    
-            //     sms.MessageLength = textLength;
-            //     sms.PhoneNumberType = numberTypeInt;
-            //}
-
-            SmsRecievedEvent?.Invoke(null, sms);
-
+                throw new Exception($"FEHLER ParseNewSms(): {ex.GetType()}\r\n{ex.Message}");
+            }
         }
 
         private static DateTime ParseUtcTime(string gsmDateString, string gsmTimeString)
@@ -281,6 +308,63 @@ namespace MelBoxGsm
             return System.Text.Encoding.BigEndianUnicode.GetString(bytes.ToArray());
         }
 
+        /// <summary>
+        /// Umlaute aus GSM-Encoding herauslesen. 
+        /// </summary>
+        /// <param name="gsm">string, GSM-Encodes</param>
+        /// <returns>bereinigter Text </returns>
+        public static string DecodeGsm(string gsm)
+        {
+            //Quelle: http://www.unicode.org/Public/MAPPINGS/ETSI/GSM0338.TXT
+
+            //System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+            //try
+            //{
+            //    gsm = gsm.Trim();
+
+            //    for (int i = 0; i < gsm.Length; i += 2)
+            //    {
+            //        string str = gsm.Substring(i, 2);
+            //        byte b = byte.Parse(str, NumberStyles.HexNumber);
+
+            //        switch (b)
+            //        {
+            //            case 0x5B:
+            //                sb.Append('Ä');
+            //                break;
+            //            case 0x5C:
+            //                sb.Append('Ö');
+            //                break;
+            //            case 0x5E:
+            //                sb.Append('Ü');
+            //                break;
+            //            case 0x7C:
+            //                sb.Append('ö');
+            //                break;
+            //            case 0x7B:
+            //                sb.Append('ä');
+            //                break;
+            //            case 0xFC:
+            //                sb.Append('ü');
+            //                break;
+            //            default:
+            //                sb.Append(str);
+            //                break;
+            //        }
+            //    }
+            //}
+            //catch
+            //{
+
+            //}
+
+            //return sb.ToString(); 
+
+            //HaSch: M|hre, ^berg{nge,  [hnlich ung~nstig \lig
+            return gsm.Replace('[', 'Ä').Replace('\\', 'Ö').Replace('^', 'Ü').Replace('{', 'ä').Replace('|', 'ö').Replace('~', 'ü');
+
+        }
 
         #endregion
     }

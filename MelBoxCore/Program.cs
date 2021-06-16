@@ -28,16 +28,11 @@ namespace MelBoxCore
             Gsm.SmsSentEvent += Gsm_SmsSentEvent;
             Gsm.SmsSentFaildEvent += Gsm_SmsSentFaildEvent;
 
-
-
-            Gsm.ModemSetup();
-            //Gsm.Ask_RelayIncomingCalls(Gsm.RelayCallsToPhone);
-
-
+            Gsm.ModemSetup();           
             Tab_Log.Insert(Tab_Log.Topic.Startup, 3, "Programmstart");
             //*/
 #if DEBUG
-            Gsm.Debug = 7;//(int)Gsm.DebugCategory.GsmRequest | (int)Gsm.DebugCategory.GsmAnswer | (int)Gsm.DebugCategory.GsmStatus ;
+            Gsm.Debug = 7;
             Console.WriteLine("Debug: Es wird keine Info-Email beim Programmstart versendet.");
 #else
             Email.Send(new System.Net.Mail.MailAddressCollection() { Email.Admin }, DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") + " MelBox2 Programmstart", "Information von " + Environment.MachineName );
@@ -56,7 +51,7 @@ namespace MelBoxCore
 
             while (run)
             {
-                string request = Console.ReadLine();
+                string request = Console.ReadLine() ?? string.Empty;
                 string[] words = request.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (words.Length < 1) continue;
 
@@ -83,6 +78,7 @@ namespace MelBoxCore
                             ParseSms sms = new ParseSms
                             {
                                 Message = "Dies ist eine MelBox2-Testnachricht. Bitte ignorieren.",
+                                TimeUtc = DateTime.Now,
                                 Sender = Environment.MachineName
                             };
                             
