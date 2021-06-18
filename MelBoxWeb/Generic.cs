@@ -229,7 +229,7 @@ namespace MelBoxWeb
                 
                 #region Editier-Button
 
-                if (user.Accesslevel >= Server.Level_Admin || (user.Id == shiftContactId && user.Accesslevel >= Server.Level_Reciever) || shiftId == 0 )
+                if (user.Accesslevel >= Server.Level_Admin || user.Accesslevel >= Server.Level_Reciever && (user.Id == shiftContactId || shiftId == 0 ) )
                 {
                     string route = shiftId == 0 ? date.ToShortDateString() : shiftId.ToString();
 
@@ -292,7 +292,6 @@ namespace MelBoxWeb
             html += "</table>\n";
             return html;
         }
-
 
         internal static string WeekDayCheckBox(MelBoxSql.Tab_Message.BlockedDays blockedDays)
         {

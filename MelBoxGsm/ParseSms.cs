@@ -84,8 +84,9 @@ namespace MelBoxGsm
         {
             string[] msgs = input.Split(new string[] { Answer_SmsRead }, StringSplitOptions.RemoveEmptyEntries);
 
+#if DEBUG
             Console.WriteLine($"Roh-SMS: {msgs.Length} Roh-Smsen gelesen.");
-
+#endif
             try
             {
                 foreach (string msg in msgs)
@@ -95,17 +96,17 @@ namespace MelBoxGsm
                     string[] lines = msg
                         .Replace("\r\n", "\n")
                         .Split('\n');
-
+#if DEBUG
                     Console.WriteLine($"Roh-SMS: {lines.Length} Zeilen.");
-
+#endif
                     string[] header = lines[0]
                         .Split(',');
-
+#if DEBUG
                     Console.WriteLine($"Roh-SMS-Kopf: {header.Length} Einträge.");
-
+#endif
                     //<index> Index
                     if (!int.TryParse(header[(int)HeaderSms.Index], out int index))
-                        continue; //Beginnt niocht mit einer Speicherplatz-Nummer: kein gültiges Format
+                        continue; //Beginnt nicht mit einer Speicherplatz-Nummer: kein gültiges Format
 
                     //[<alpha>] PhoneBookentry für <oa>/<da> | <mr> MessageReference
                     if (int.TryParse(header[(int)HeaderStatusReport.MessageReference], out int reference))

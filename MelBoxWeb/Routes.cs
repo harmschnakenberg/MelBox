@@ -34,15 +34,28 @@ namespace MelBoxWeb
 
         #region Nachrichten
         [RestRoute("Get", "/in")]
+        [RestRoute("Get", "/in/{firstDate}")]
         public static async Task InBox(IHttpContext context)
-        {
-            //Später per URL Beginn und Ende definierbar?
-
+        {            
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
-            //System.Data.DataTable rec = MelBoxSql.Sql.Recieved_View(DateTime.UtcNow.AddDays(-14), DateTime.UtcNow);
+            bool authorized = false;
+
+            if (guid != null && Server.LogedInHash.TryGetValue(guid, out Contact user) && user.Accesslevel >= Server.Level_Admin)
+            {
+                authorized = true;
+            }
+
+            ////Später per URL Beginn und Ende definierbar?
+            //var firstDateStr = context.Request.PathParameters["firstDate"]; //TEST
+
+            //System.Data.DataTable rec;
+            //if (DateTime.TryParse(firstDateStr, out DateTime firstDate))            
+            //    rec = MelBoxSql.Sql.Recieved_View(firstDate, DateTime.UtcNow);            
+            //else
             System.Data.DataTable rec = MelBoxSql.Sql.Recieved_View_Last(1000);
-            string table = Html.FromTable(rec, guid != null, "blocked");
+
+            string table = Html.FromTable(rec, authorized, "blocked");
 
             await Server.PageAsync(context, "Eingang", table);
         }
@@ -86,7 +99,7 @@ namespace MelBoxWeb
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
-            if (guid == null || !Server.LogedInHash.TryGetValue(guid, out Contact user))
+            if (guid == null || !Server.LogedInHash.TryGetValue(guid, out Contact user) )
             {
                 await Home(context);
                 return;
@@ -118,6 +131,7 @@ namespace MelBoxWeb
 
             Dictionary<string, string> pairs = new Dictionary<string, string>
             {
+                //{ "##readonly##", string.Empty },
                 { "##Id##", shift.Id.ToString() },
                 { "##ContactOptions##", contactOptions },
                 { "##MinDate##", DateTime.UtcNow.Date.ToString("yyyy-MM-dd") },
@@ -160,11 +174,8 @@ namespace MelBoxWeb
 
             Dictionary<string, string> pairs = new Dictionary<string, string>
             {
-                //pairs.Add("##readonly##", isAdmin ? string.Empty : "readonly");
-                //pairs.Add("##disabled##", isAdmin ? string.Empty : "disabled");
+               // { "##readonly##", "readonly" },
                 { "##Id##", string.Empty },
-                // pairs.Add("##ContactId##", contact.Id.ToString());
-                //pairs.Add("##Name##", contact.Name);
                 { "##ContactOptions##", contactOptions },
                 { "##MinDate##", DateTime.UtcNow.Date.ToString("yyyy-MM-dd") },
                 { "##StartDate##", shiftDate.Date.ToString("yyyy-MM-dd") },
@@ -173,7 +184,7 @@ namespace MelBoxWeb
                 { "##EndOptions##", Tab_Shift.HtmlOptionHour(shift.End.ToLocalTime().Hour) },
                 { "##Route##", "new" }
             };
-
+                       
             string form = Server.Page(Server.Html_FormShift, pairs);
 
             DataTable dt = Sql.Shift_View();
@@ -216,6 +227,7 @@ namespace MelBoxWeb
                     end = endDate.Date.AddHours(endHour); //Lokale Zeit!          
             #endregion
 
+          
             bool success = MelBoxSql.Tab_Shift.Insert(shiftContactId, start, end);
             string alert;
 
@@ -269,22 +281,15 @@ namespace MelBoxWeb
 
             Shift set = new Shift(shiftContactId, start.ToUniversalTime(), end.ToUniversalTime());
             Shift where = new Shift() { Id = shiftId };
+            double shiftHours = end.Subtract(start).TotalHours;
 
-            string alert = string.Empty;
-            double shiftHours = (endDate.Date - startDate.Date).TotalHours;
-
-            if (shiftHours > 0)
-            {
-                if (MelBoxSql.Tab_Shift.Update(set, where))
-                    alert = Html.Alert(3, "Bereitschaft geändert", $"Die Bereitschaft Nr. {shiftId} von {start.ToShortDateString()} bis {end.ToShortDateString()}  wurde erfolgreich geändert.");
-                else
-                    alert = Html.Alert(1, "Fehler beim Ändern der Bereitschaft", "Die Bereitschaft konnte nicht in der Datenbank gespeichert werden.");
-            }
+            string alert;
+            if (shiftHours > 0 && user.Accesslevel >= Server.Level_Reciever && MelBoxSql.Tab_Shift.Update(set, where))
+                alert = Html.Alert(3, "Bereitschaft geändert", $"Die Bereitschaft Nr. {shiftId} von {start.ToShortDateString()} bis {end.ToShortDateString()} ({shiftHours} Std.) wurde erfolgreich geändert.");
+            else if (user.Accesslevel >= Server.Level_Admin && MelBoxSql.Tab_Shift.Delete(where))
+                alert = Html.Alert(1, "Bereitschaft gelöscht", $"Die Bereitschaft Nr. {shiftId} von {start.ToShortDateString()} bis {end.ToShortDateString()} wurde gelöscht.");
             else
-            {
-                if( MelBoxSql.Tab_Shift.Delete(where))
-                    alert = Html.Alert(1, "Bereitschaft gelöscht", $"Die Bereitschaft Nr. {shiftId} von {start.ToShortDateString()} bis {end.ToShortDateString()} wurde gelöscht.");
-            }
+                alert = Html.Alert(2, "Fehler beim Ändern der Bereitschaft", "Es wurden ungültige Parameter übergeben.");
 
             DataTable dt = Sql.Shift_View();
             string table = Html.FromShiftTable(dt, user);
@@ -349,8 +354,15 @@ namespace MelBoxWeb
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
+            bool authorized = false;
+
+            if (guid != null && Server.LogedInHash.TryGetValue(guid, out Contact user) && user.Accesslevel >= Server.Level_Admin)
+            {
+                authorized = true;
+            }
+
             System.Data.DataTable blocked = MelBoxSql.Sql.Blocked_View();
-            string table = Html.FromTable(blocked, guid != null, "blocked");
+            string table = Html.FromTable(blocked, authorized, "blocked");
 
             await Server.PageAsync(context, "Gesperrte Nachrichten", table);
         }

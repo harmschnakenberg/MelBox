@@ -59,33 +59,47 @@ namespace MelBoxSql
         {
             bool success = true;
 
-
-            DateTime s = start;
-            DateTime e = end;
-
-            do
+            if (end.Date.Subtract(start.Date).TotalDays == 1) //eine Nacht
             {
-                if ( DateTime.Compare(s.AddDays(1), e) < 0) // <0: t1 liegt vor t2.
-                {
-                    e = s.AddDays(1);
-                }
-
                 Shift shift = new Shift
                 {
                     ContactId = ContactId,
                     EntryTime = DateTime.UtcNow,
-                    Start = ShiftStart(s),
-                    End = ShiftEnd(s)
+                    Start = start.ToUniversalTime(),
+                    End = end.ToUniversalTime()
                 };
-                s = e;
-                e = s.AddDays(1);
 
-                success &= Sql.Insert(TableName, ToDictionary(shift));
-
-                Console.WriteLine("Schicht von " + shift.Start + " bis " + shift.End);
+                success = Sql.Insert(TableName, ToDictionary(shift));
             }
-            while (DateTime.Compare(s, end) < 0);
-            
+            else // mehrere Nächte
+            {
+                DateTime s = start;
+                DateTime e = end;
+
+                do
+                {
+                    if (DateTime.Compare(s.AddDays(1), e) < 0) // <0: t1 liegt vor t2.
+                    {
+                        e = s.AddDays(1);
+                    }
+
+                    Shift shift = new Shift
+                    {
+                        ContactId = ContactId,
+                        EntryTime = DateTime.UtcNow,
+                        Start = ShiftStart(s),
+                        End = ShiftEnd(s)
+                    };
+
+                    s = e;
+                    e = s.AddDays(1);
+
+                    success &= Sql.Insert(TableName, ToDictionary(shift));
+
+                    Console.WriteLine("Schicht von " + shift.Start + " bis " + shift.End);
+                }
+                while (DateTime.Compare(s, end) < 0);
+            }
 
             return success;
         }

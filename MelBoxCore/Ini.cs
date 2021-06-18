@@ -24,6 +24,10 @@ namespace MelBoxCore
             {
                 w.WriteLine("[ öäü " + w.Encoding.EncodingName + ", Build " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + "]\r\n" +
                             "\r\n[Intern]\r\n" +
+
+                            ";;; Debug-Word für GSM-Modem-Kommunikation:\r\n" +
+                            $";{nameof(Gsm.Debug)}={Gsm.Debug}\r\n" +
+
                             ";;; Sms-Text zur Prüfung des Sendewegs (case-insensitive):\r\n" + 
                             $";{nameof(Program.SmsWayValidationTrigger)}={Program.SmsWayValidationTrigger}\r\n" +
 
@@ -112,7 +116,11 @@ namespace MelBoxCore
                         case nameof(MelBoxSql.Sql.MaxSelectedRows):
                             if (int.TryParse(val, out i))
                                 MelBoxSql.Sql.MaxSelectedRows = i;
-                            break;                                                        
+                            break;
+                        case nameof(Gsm.Debug):
+                            if (int.TryParse(val, out i))
+                                Gsm.Debug = i;
+                            break;
                         case nameof(Gsm.AdminPhone):
                             if (ulong.TryParse(val.Trim('+'), out ulong phone))
                                 Gsm.AdminPhone = phone;
