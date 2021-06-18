@@ -181,15 +181,16 @@ namespace MelBoxSql
         }
 
         public static System.Data.DataTable SelectContactList(int accesslevel, int contactId = 0, string operation = "<=")
-        {          
+        {
             string query = "SELECT Contact.Id AS Id, Contact.Name AS Name, Contact.Accesslevel AS Level, Company.Name AS Firma, Company.City AS Ort" +
-                " FROM " + TableName + 
+                " FROM " + TableName +
                 " JOIN " + Tab_Company.TableName + " ON Company.Id = Contact.CompanyId" + //IFNULL() da sonst Kontakte ohne Firmeneintrag nicht angezeigt werden.
-                " WHERE Accesslevel " + operation + " " + accesslevel +
-                " ORDER BY Contact.Name ";
-
+                " WHERE Accesslevel " + operation + " " + accesslevel;
+                
             if (contactId > 0)
                 query += " AND Contact.Id = " + contactId;
+
+            query += " ORDER BY Contact.Name ";
 
             return Sql.SelectDataTable("Kontakte", query, null);
         }
