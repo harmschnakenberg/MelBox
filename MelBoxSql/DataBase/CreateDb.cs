@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace MelBoxSql
 {
@@ -85,11 +84,11 @@ namespace MelBoxSql
                 //Zeiten in UTC im Format TEXT (Lesbarkeit Rohdaten)
 
                 #region Log
-                
+
                 Tab_Log.CreateTable();
 
                 Log log = new Log(Tab_Log.Topic.Startup, 3, "Datenbank neu erstellt.");
-                
+
                 Tab_Log.Insert(log);
 
                 #endregion
@@ -99,7 +98,7 @@ namespace MelBoxSql
                 Tab_Company.CreateTable();
 
                 Company company1 = new Company("Kreutzträger Kältetechnik GmbH & Co. KG", "Theodor-Barth-Str. 21", "28307 Bremen");
-                
+
                 Tab_Company.Insert(company1);
 
                 #endregion
@@ -112,7 +111,7 @@ namespace MelBoxSql
                 {
                     Id = 1,
                     Name = "SMSZentrale",
-                    Password =  Tab_Contact.Encrypt("7307"),
+                    Password = Tab_Contact.Encrypt("7307"),
                     Accesslevel = 9000,
                     CompanyId = 1,
                     Email = "smszentrale@kreutztraeger.de",
@@ -132,7 +131,7 @@ namespace MelBoxSql
                     CompanyId = 1,
                     Email = "bereitschaftshandy@kreutztraeger.de",
                     Phone = 491728362586,
-                    Via = Tab_Contact.Communication.Sms                    
+                    Via = Tab_Contact.Communication.Sms
                 };
 
                 Tab_Contact.Insert(contact);
@@ -195,7 +194,7 @@ namespace MelBoxSql
                 #endregion
 
                 #region Recieved
-                
+
                 Tab_Recieved.CreateTable();
 
                 Recieved recieved1 = new Recieved(1, 1)
@@ -252,7 +251,7 @@ namespace MelBoxSql
         }
 
 
-      
+
     }
 
 }

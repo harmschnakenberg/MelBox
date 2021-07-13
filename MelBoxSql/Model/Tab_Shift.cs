@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace MelBoxSql
 {
@@ -9,7 +8,7 @@ namespace MelBoxSql
         internal const string TableName = "Shift";
 
         public static int DefaultShiftContactId { get; set; } = 2; //Bereitschaftshandy
-        
+
         /// <summary>
         /// Stunde Tageswechsel Bereitschaft (z.B. 8 Uhr)
         /// </summary>
@@ -103,7 +102,7 @@ namespace MelBoxSql
 
             return success;
         }
-    
+
         public static bool Update(Shift set, Shift where)
         {
             if (DateTime.Compare(set.Start, set.End) > 0) //t1 ist später als t2.
@@ -128,7 +127,7 @@ namespace MelBoxSql
         }
 
         public static Shift Select(int shiftId)
-        {           
+        {
             string query = "SELECT * FROM " + TableName + " WHERE Id = " + shiftId;
             System.Data.DataTable dt = Sql.SelectDataTable("Eine Nacht", query, null);
 
@@ -146,8 +145,8 @@ namespace MelBoxSql
             shift.ContactId = contactId;
             shift.Start = start;
             shift.End = end;
-          
-            return shift;            
+
+            return shift;
         }
 
         public static List<Shift> SelectOrCreateCurrentShift()

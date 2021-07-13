@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace MelBoxSql
 {
     public static class Tab_Company
-    {  
+    {
         internal const string TableName = "Company";
 
         private static Dictionary<string, object> ToDictionary(Company company)
@@ -21,7 +20,7 @@ namespace MelBoxSql
         }
 
         public static bool CreateTable()
-        {           
+        {
             Dictionary<string, string> columns = new Dictionary<string, string>
                 {
                     { nameof(Company.Id), "INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT" },
@@ -34,12 +33,12 @@ namespace MelBoxSql
         }
 
         public static bool Insert(Company company)
-        {    
+        {
             return Sql.Insert(TableName, ToDictionary(company));
         }
 
         public static bool Update(Company set, Company where)
-        {    
+        {
             return Sql.Update(TableName, ToDictionary(set), ToDictionary(where));
         }
 
@@ -71,7 +70,7 @@ namespace MelBoxSql
             string name = dt.Rows[0][nameof(company.Name)].ToString();
             string address = dt.Rows[0][nameof(company.Address)].ToString();
             string city = dt.Rows[0][nameof(company.City)].ToString();
-            
+
 
             company.Id = Id;
             company.Name = name;
@@ -107,8 +106,8 @@ namespace MelBoxSql
                 string city = dt.Rows[i][2].ToString();
                 city = System.Text.RegularExpressions.Regex.Replace(city, @"\d", "");
 
-                if (id != exceptId)               
-                    companies +=$"<option value='{id}'>{name}, {city}</option>" + Environment.NewLine;
+                if (id != exceptId)
+                    companies += $"<option value='{id}'>{name}, {city}</option>" + Environment.NewLine;
             }
 
             return companies;
@@ -122,7 +121,7 @@ namespace MelBoxSql
         { }
 
         public Company(int id)
-        { 
+        {
             Id = id;
         }
 

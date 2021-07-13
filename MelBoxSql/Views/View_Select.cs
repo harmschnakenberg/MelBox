@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MelBoxSql
 {
-    public partial class Sql    
+    public partial class Sql
     {
         public static int MaxSelectedRows { get; set; } = 1000;
 
@@ -22,7 +20,7 @@ namespace MelBoxSql
         public static System.Data.DataTable Recieved_View_Last(int count)
         {
             string query = "SELECT Nr, datetime(Empfangen, 'localtime') AS Empfangen, Von, Inhalt FROM " + Recieved_ViewName +
-                            " ORDER BY Empfangen DESC LIMIT " + count ;
+                            " ORDER BY Empfangen DESC LIMIT " + count;
 
             return Sql.SelectDataTable("Empfangen", query);
         }

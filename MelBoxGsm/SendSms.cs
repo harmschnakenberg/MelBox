@@ -15,7 +15,7 @@ namespace MelBoxGsm
         #endregion
 
         static System.Timers.Timer sendTimer = null;
-        public static Queue<Tuple<string, string>> SendList = new Queue<Tuple<string,string>>();
+        public static Queue<Tuple<string, string>> SendList = new Queue<Tuple<string, string>>();
         private static Tuple<string, string> currentSendSms = null;
 
         public static int MaxMinutesForSending { get; set; } = 3;
@@ -117,7 +117,7 @@ namespace MelBoxGsm
             if (askingTimer == null) return;
 
             if (!set && askingTimer.Enabled)
-            askingTimer.Stop();
+                askingTimer.Stop();
 
             if (set && !askingTimer.Enabled)
                 askingTimer.Start();
@@ -132,7 +132,7 @@ namespace MelBoxGsm
             {
                 TimeSpan waiting = DateTime.UtcNow.Subtract(sms.TimeUtc);
                 if (waiting.TotalMinutes > MaxMinutesForSending)
-                {                    
+                {
                     SmsSentFaildEvent?.Invoke(null, sms);
                     delete.Add(sms);
                 }
@@ -141,7 +141,7 @@ namespace MelBoxGsm
             foreach (ParseSms sms in delete)
             {
                 WaitingForStatusReport.Remove(sms);
-            }            
+            }
         }
 
     }

@@ -47,7 +47,7 @@ namespace MelBoxWeb
             html += "<table id='table1' class='w3-table-all'>\n";
             //add header row
             html += "<tr>";
-            
+
             if (authorized)
             {
                 html += "<th>Edit</th>";
@@ -56,16 +56,16 @@ namespace MelBoxWeb
             // int rows = dt.Rows.Count;
 
             for (int i = 0; i < dt.Columns.Count; i++)
-               // if (rows > 370) // Große Tabellen nicht sortierbar machen, da zu rechenintensiv!                
-                    html += $"<th>" +
-                            $"{dt.Columns[i].ColumnName.Replace('_', ' ')}" +
-                            $"</th>";                
-                //else                
-                //    html += $"<th class='w3-hover-sand' onclick=\"w3.sortHTML('#table1', '.item', 'td:nth-child({ i + 1 })')\">" +
-                //            $"{dt.Columns[i].ColumnName.Replace('_', ' ')}" +
-                //            $"</th>";
-                
-              html += "</tr>\n";
+                // if (rows > 370) // Große Tabellen nicht sortierbar machen, da zu rechenintensiv!                
+                html += $"<th>" +
+                        $"{dt.Columns[i].ColumnName.Replace('_', ' ')}" +
+                        $"</th>";
+            //else                
+            //    html += $"<th class='w3-hover-sand' onclick=\"w3.sortHTML('#table1', '.item', 'td:nth-child({ i + 1 })')\">" +
+            //            $"{dt.Columns[i].ColumnName.Replace('_', ' ')}" +
+            //            $"</th>";
+
+            html += "</tr>\n";
 
             //add rows
             for (int i = 0; i < dt.Rows.Count; i++)
@@ -92,7 +92,7 @@ namespace MelBoxWeb
                     else if (dt.Columns[j].ColumnName.StartsWith("Via"))
                     {
                         if (int.TryParse(dt.Rows[i][j].ToString(), out int via))
-                        {                           
+                        {
                             bool phone = 0 != (via & (int)MelBoxSql.Tab_Contact.Communication.Sms);
                             bool email = 0 != (via & (int)MelBoxSql.Tab_Contact.Communication.Email);
 
@@ -104,12 +104,12 @@ namespace MelBoxWeb
                     }
                     else if (dt.Columns[j].ColumnName.Contains("Sendestatus"))
                     {
-                       
+
                         html += "<td><span class='material-icons-outlined'>";
 
                         if (int.TryParse(dt.Rows[i][j].ToString(), out int confirmation))
-                        {                            
-                            switch ((MelBoxSql.Tab_Sent.Confirmation) confirmation)
+                        {
+                            switch ((MelBoxSql.Tab_Sent.Confirmation)confirmation)
                             {
                                 case MelBoxSql.Tab_Sent.Confirmation.NaN:
                                 case MelBoxSql.Tab_Sent.Confirmation.AbortedSending:
@@ -126,15 +126,15 @@ namespace MelBoxWeb
                                     break;
                                 case MelBoxSql.Tab_Sent.Confirmation.RetrySending:
                                     html += "try";
-                                    break; 
+                                    break;
                                 case MelBoxSql.Tab_Sent.Confirmation.SentSuccessful:
                                     html += "check";
                                     break;
                                 default:
                                     html += "device_unknown";
                                     break;
-                            }                            
-                        }                        
+                            }
+                        }
                         else
                         {
                             html += "error";
@@ -144,9 +144,9 @@ namespace MelBoxWeb
                     }
                     else if (dt.Columns[j].ColumnName.StartsWith("Topic"))
                     {
-                        if(int.TryParse(dt.Rows[i][j].ToString(), out int topicNo))
+                        if (int.TryParse(dt.Rows[i][j].ToString(), out int topicNo))
                         {
-                            html += "<td>" + ((MelBoxSql.Tab_Log.Topic) topicNo).ToString() +"</td>";
+                            html += "<td>" + ((MelBoxSql.Tab_Log.Topic)topicNo).ToString() + "</td>";
                         }
                     }
                     else
@@ -199,7 +199,7 @@ namespace MelBoxWeb
             }
 
             //for (int i = 0; i < dt.Columns.Count; i++)
-                html += "<th>Nr</th><th>Name</th><th>Via</th><th>Tag</th><th>Datum</th><th>Zeitraum</th>";
+            html += "<th>Nr</th><th>Name</th><th>Via</th><th>Tag</th><th>Datum</th><th>Zeitraum</th>";
 
             html += "</tr>\n";
 
@@ -219,17 +219,17 @@ namespace MelBoxWeb
 
 
                 if (holydays.Contains(date)) //Feiertag?
-                    html += "<tr class='item w3-pale-red'>";                
+                    html += "<tr class='item w3-pale-red'>";
                 else if (day == "Sa" || day == "So") //Wochenende ?              
                     html += "<tr class='item w3-sand'>";
                 else if (date == DateTime.Now.Date) //heute
                     html += "<tr class='item w3-pale-green'>";
-                else                
+                else
                     html += "<tr class='item'>";
-                
+
                 #region Editier-Button
 
-                if (user.Accesslevel >= Server.Level_Admin || user.Accesslevel >= Server.Level_Reciever && (user.Id == shiftContactId || shiftId == 0 ) )
+                if (user.Accesslevel >= Server.Level_Admin || user.Accesslevel >= Server.Level_Reciever && (user.Id == shiftContactId || shiftId == 0))
                 {
                     string route = shiftId == 0 ? date.ToShortDateString() : shiftId.ToString();
 
@@ -308,7 +308,7 @@ namespace MelBoxWeb
 
             return html.Append("</span>").ToString();
         }
-    
+
         internal static string ButtonNew(string root)
         {
             return $"<button style='width:20%' class='w3-button w3-block w3-blue w3-section w3-padding w3-margin-right w3-col type='submit' formaction='/{root}/new'>Neu</button>\r\n";

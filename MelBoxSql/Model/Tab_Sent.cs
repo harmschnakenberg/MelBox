@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace MelBoxSql
 {
@@ -35,7 +33,7 @@ namespace MelBoxSql
         }
 
         public static bool CreateTable()
-        {           
+        {
             Dictionary<string, string> columns = new Dictionary<string, string>
                 {
                     { nameof(Sent.Id), "INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT" },

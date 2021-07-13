@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace MelBoxSql
 {
@@ -55,17 +53,17 @@ namespace MelBoxSql
         }
     }
 
-    public static class GsmStatus
-    {
-        const string init = "-unbekannt-";
-        public static int SignalQuality { get; set; } = -1; //Mobilfunktsiganlqualität
-        public static double SignalErrorRate { get; set; } = -1; //BitError-Rate (nur für Sprachanrufe interessant?)
-        public static string OwnName { get; set; } = init; //Im Sim-Telefonbuch hinterlegter Name
-        public static string OwnNumber { get; set; } = init; // Telefonnumer der iengelegten Sim-Karte
-        public static string NetworkRegistration { get; set; } = init; //Text zum Anmeldestatus im Mobilfunknetz
-        public static string ServiceCenterNumber { get; set; } = init; //SMS-Serviceneter-Nummer
-        public static string ProviderName { get; set; } = init; //Netzbetreibername z.B. Telekom
-        public static ulong RelayNumber { get; set; } = 0; //Nummer, an die Sprachanrufe weitergeleitet werden.
-        public static string PinStatus { get; set; } = init; //Gibt an, ob die PIN richtig gesetzt ist
-    }
+    //public static class GsmStatus
+    //{
+    //    const string init = "-unbekannt-";
+    //    public static int SignalQuality { get; set; } = -1; //Mobilfunktsiganlqualität
+    //    public static double SignalErrorRate { get; set; } = -1; //BitError-Rate (nur für Sprachanrufe interessant?)
+    //    public static string OwnName { get; set; } = init; //Im Sim-Telefonbuch hinterlegter Name
+    //    public static string OwnNumber { get; set; } = init; // Telefonnumer der iengelegten Sim-Karte
+    //    public static string NetworkRegistration { get; set; } = init; //Text zum Anmeldestatus im Mobilfunknetz
+    //    public static string ServiceCenterNumber { get; set; } = init; //SMS-Serviceneter-Nummer
+    //    public static string ProviderName { get; set; } = init; //Netzbetreibername z.B. Telekom
+    //    public static ulong RelayNumber { get; set; } = 0; //Nummer, an die Sprachanrufe weitergeleitet werden.
+    //    public static string PinStatus { get; set; } = init; //Gibt an, ob die PIN richtig gesetzt ist
+    //}
 }

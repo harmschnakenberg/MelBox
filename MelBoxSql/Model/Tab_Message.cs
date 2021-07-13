@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace MelBoxSql
 {
@@ -8,7 +7,7 @@ namespace MelBoxSql
     {
         internal const string TableName = "Message";
 
-       // [Flags]
+        // [Flags]
         public enum BlockedDays
         {
             NaN = -1,
@@ -25,7 +24,7 @@ namespace MelBoxSql
             //All = 127
         }
 
-        public static BlockedDays BlockWeek (bool workdays = true, bool weekend = true)
+        public static BlockedDays BlockWeek(bool workdays = true, bool weekend = true)
         {
             BlockedDays blockedDays = BlockedDays.None;
 
@@ -114,7 +113,7 @@ namespace MelBoxSql
         public static Message SelectMessage(int Id)
         {
             string query = "SELECT * FROM " + TableName + " WHERE Id = " + Id + "; ";
-           
+
             System.Data.DataTable dt = Sql.SelectDataTable("Einzelnachricht", query, null);
 
             Message message = new Message();
@@ -125,7 +124,7 @@ namespace MelBoxSql
             int.TryParse(dt.Rows[0][nameof(message.StartBlockHour)].ToString(), out int startBblockedHour);
             int.TryParse(dt.Rows[0][nameof(message.EndBlockHour)].ToString(), out int endBblockedHour);
             DateTime.TryParse(dt.Rows[0][nameof(message.EntryTime)].ToString(), out DateTime entryTime);
-        
+
             message.Content = dt.Rows[0][nameof(message.Content)].ToString();
             message.BlockedDays = (BlockedDays)blockedDaysInt;
             message.EntryTime = entryTime.ToLocalTime();
@@ -151,14 +150,14 @@ namespace MelBoxSql
                     BlockedDays = BlockedDays.None
                 };
 
-                if (!Insert(message))                
-                    throw new Exception("SelectOrCreateMessageId(): Neue Nachricht \r\n" + message + "\r\nkonnte nicht in DB gespeichert werden.");                
-                else                
+                if (!Insert(message))
+                    throw new Exception("SelectOrCreateMessageId(): Neue Nachricht \r\n" + message + "\r\nkonnte nicht in DB gespeichert werden.");
+                else
                     return SelectOrCreateMessageId(Message); //Rekursiver Aufruf                
             }
 
             int.TryParse(dt.Rows[0][0].ToString(), out int messageId);
-            
+
             return messageId;
         }
 
@@ -191,12 +190,12 @@ namespace MelBoxSql
                 today = DayOfWeek.Sunday;
             }
 
-            switch (today) 
-            {               
+            switch (today)
+            {
                 case DayOfWeek.Monday:
                     if ((msg.BlockedDays & BlockedDays.Mo) > 0)
                         blockedDay = true;
-                        break;
+                    break;
                 case DayOfWeek.Tuesday:
                     if ((msg.BlockedDays & BlockedDays.Di) > 0)
                         blockedDay = true;
@@ -220,13 +219,12 @@ namespace MelBoxSql
                 case DayOfWeek.Sunday:
                     if ((msg.BlockedDays & BlockedDays.So) > 0)
                         blockedDay = true;
-                    break;                
+                    break;
             }
 
             if (blockedDay)
             {
-                //jetzt 13 --> 17 bis 7
-                if (msg.StartBlockHour >= DateTime.Now.Hour || (msg.EndBlockHour > 0 && msg.EndBlockHour < DateTime.Now.Hour) )
+                if (DateTime.Now.Hour >= msg.StartBlockHour || (msg.EndBlockHour > 0 && DateTime.Now.Hour < msg.EndBlockHour))
                     return true;
             }
 
@@ -236,7 +234,7 @@ namespace MelBoxSql
 
     public class Message
     {
-       
+
         public int Id { get; set; }
 
         public System.DateTime EntryTime { get; set; } = DateTime.MinValue;

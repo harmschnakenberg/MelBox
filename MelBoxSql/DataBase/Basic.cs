@@ -64,7 +64,7 @@ namespace MelBoxSql
                     //connection.Dispose();
                 }
 
-               // return 0 < n;
+                // return 0 < n;
             }
             catch (Exception ex)
             {
@@ -77,7 +77,7 @@ namespace MelBoxSql
         }
 
         internal static DataTable SelectDataTable(string tableName, string query, Dictionary<string, object> args = null)
-        {            
+        {
             if (!isDatabaseExistent) Open();
 
             try
@@ -93,17 +93,17 @@ namespace MelBoxSql
 
                     var command = connection.CreateCommand();
                     command.CommandText = query;
-                   // Console.WriteLine(command.CommandText); // für Debug 
+                    // Console.WriteLine(command.CommandText); // für Debug 
 
                     if (args != null && args.Count > 0)
                     {
                         foreach (string key in args.Keys)
                         {
                             command.Parameters.AddWithValue(key, args[key]);
-                           // Console.WriteLine(key + "\t"+ args[key]); //TEST
+                            // Console.WriteLine(key + "\t"+ args[key]); //TEST
                         }
                     }
-                                       
+
                     try
                     {
                         using (var reader = command.ExecuteReader())
@@ -219,7 +219,7 @@ namespace MelBoxSql
                     return string.Empty;
             }
             catch (Exception ex)
-            {                
+            {
                 throw ex;
             }
         }

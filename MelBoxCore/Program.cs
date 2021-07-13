@@ -1,8 +1,6 @@
-﻿using System;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using MelBoxGsm;
+﻿using MelBoxGsm;
 using MelBoxSql;
+using System;
 
 namespace MelBoxCore
 {
@@ -11,7 +9,7 @@ namespace MelBoxCore
      *  2)  Frage: WebServer auslagern in eigene EXE ?
      * 
      */
-    
+
     partial class Program
     {
 
@@ -32,12 +30,13 @@ namespace MelBoxCore
                 Gsm.SmsSentFaildEvent += Gsm_SmsSentFaildEvent;
 
                 Gsm.ModemSetup();
-                Tab_Log.Insert(Tab_Log.Topic.Startup, 3, "Programmstart");            
+                Tab_Log.Insert(Tab_Log.Topic.Startup, 3, "Programmstart");
+                Console.WriteLine($"Tägliche Abfrage um {HourOfDailyTasks} Uhr.");
 #if DEBUG
                 Gsm.Debug = 7;
                 Console.WriteLine("Debug: Es wird keine Info-Email beim Programmstart versendet.");
 #else
-            Email.Send(new System.Net.Mail.MailAddressCollection() { Email.Admin }, DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") + " MelBox2 Programmstart", "Information von " + Environment.MachineName );
+                Email.Send(new System.Net.Mail.MailAddressCollection() { Email.Admin }, DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") + " MelBox2 Programmstart", "Information von " + Environment.MachineName);
 #endif
                 Console.WriteLine("Prüfe Datenbank: " + (Sql.CheckDb() ? "ok" : "Fehler"));
 
@@ -138,7 +137,7 @@ namespace MelBoxCore
 
         private static void Gsm_SmsSentFaildEvent(object sender, ParseSms e)
         {
-            string Text =   $"Für die SMS  >{e.InternalReference}<\r\n" +
+            string Text = $"Für die SMS  >{e.InternalReference}<\r\n" +
                             $"An >{e.Sender}<\r\n" +
                             $"Text >{e.Message}<\r\n" +
                             $"ist seit >{e.TimeUtc.ToLocalTime()}< keine Empfangsbestätigung eingegangen. \r\n" +

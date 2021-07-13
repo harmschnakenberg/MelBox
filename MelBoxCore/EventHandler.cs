@@ -19,7 +19,7 @@ namespace MelBoxCore
         {
             if ((Gsm.Debug & (int)Gsm.DebugCategory.GsmStatus) > 0)
             {
-                Console.ForegroundColor = ConsoleColor.DarkCyan;
+                Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine(e.Property + ":\t" + e.Value);
                 Console.ForegroundColor = ConsoleColor.Gray;
             }
@@ -58,7 +58,7 @@ namespace MelBoxCore
                     if ((bool)e.Value)
                     {
                         MelBoxWeb.GsmStatus.RelayNumber = Gsm.RelayCallsToPhone;
-                        Tab_Log.Insert(Tab_Log.Topic.Gsm, 3, "Sprachanrufe werden umgeleitet an +" + Gsm.RelayCallsToPhone);                        
+                        Tab_Log.Insert(Tab_Log.Topic.Gsm, 3, "Sprachanrufe werden umgeleitet an +" + Gsm.RelayCallsToPhone);
                     }
                     else
                     {
@@ -82,7 +82,7 @@ namespace MelBoxCore
                     if ((bool)e.Value)
                     {
                         Console.WriteLine("SIM-Karte erkannt.");
-                        Gsm.SimCardDetected();
+                        Gsm.Ask_NetworkRegistration();                        
                     }
                     break;
                 default:
@@ -132,10 +132,13 @@ namespace MelBoxCore
 
         private static void Gsm_SmsSentEvent(object sender, ParseSms e)
         {
-            Console.ForegroundColor = ConsoleColor.DarkRed;
-            Console.WriteLine("Versendet " + e.Sender + ":\r\n" + e.Message);
-            Console.ForegroundColor = ConsoleColor.Gray;
-                       
+            if ((Gsm.Debug & (int)Gsm.DebugCategory.GsmRequest) > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkCyan;
+                Console.WriteLine("Versendet " + e.Sender + ":\r\n" + e.Message);
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
+
             string msg = e.Message.ToLower().StartsWith(SmsWayValidationTrigger.ToLower()) ? SmsWayValidationTrigger : e.Message; //Bei "SmsAbruf" ist SendeText und Empfangstect verschieden.
             int contentId = MelBoxSql.Tab_Message.SelectOrCreateMessageId(msg);
             int toId = GetSmsSenderID(e.Sender, e.Message);
@@ -253,9 +256,9 @@ namespace MelBoxCore
                 }
                 #endregion
             }
-            
+
             //Emails an Bereitschaft und ständige Empfänger senden.
-            string subject = $"SMS-Eingang >{MelBoxSql.Tab_Contact.SelectName_Company_City(fromId)}<, Text >{e.Message}<"; 
+            string subject = $"SMS-Eingang >{MelBoxSql.Tab_Contact.SelectName_Company_City(fromId)}<, Text >{e.Message}<";
             string body = $"Absender >{e.Sender}<\r\nText >{e.Message}<\r\nSendezeit >{e.TimeUtc.ToLocalTime().ToLongTimeString()}<\r\n" + emailSuffix;
             Email.Send(emailRecievers, body, subject, emailId);
 
@@ -270,7 +273,7 @@ namespace MelBoxCore
 
             if (fromId == 0) // Unbekannter Sender
             {
-                Tab_Contact.InsertNewContact(phone, message); 
+                Tab_Contact.InsertNewContact(phone, message);
                 fromId = MelBoxSql.Tab_Contact.SelectContactId(phone);
 
                 string log = message.Length > 32 ? message.Substring(0, 32) + "..." : message;
@@ -280,9 +283,9 @@ namespace MelBoxCore
                 Email.Send(Email.Admin, log, "Unbekannter Absender: Benutzer angelegt.");
             }
 
-            #if DEBUG
+#if DEBUG
             Console.WriteLine($"Debug: Kontakt >{phone}< hat die Id {fromId}");
-            #endif
+#endif
 
             return fromId;
         }

@@ -143,25 +143,22 @@ namespace MelBoxGsm
             }
         }
 
-        public static void SimCardDetected()
+        public static void NetworkConnected()
         {
-            //SIM-Karte gesperrt?
-            Write("AT+CPIN?");
-
             //Signalqualität
             Ask_SignalQuality();
-
-            //Eigene Telefonnumer-Nummer der SIM-Karte auslesen 
-            Write("AT+CNUM");
-
-            //Im Netzwerk Registriert?
-            Ask_NetworkRegistration();
 
             //ProviderName?
             Write("AT+COPS?");
 
             //SMS-Service-Center Adresse
             Write("AT+CSCA?");
+
+            //Eigene Telefonnumer-Nummer der SIM-Karte auslesen 
+            Write("AT+CNUM");
+
+            //SIM-Karte gesperrt?
+            Write("AT+CPIN?");
 
             //Alle Speicher nutzen
             Write("AT+CPMS=\"MT\",\"MT\",\"MT\"");
@@ -239,9 +236,9 @@ namespace MelBoxGsm
             }
 #endif
         }
-#endregion
+        #endregion
 
-#region Auslesen
+        #region Auslesen
         // +CSQ: 20,99
         private static void ParseSignalQuality(string input)
         {
@@ -282,7 +279,7 @@ namespace MelBoxGsm
                     case 6:
                         ModemErrorRate = 12.8;
                         break;
-                    case 7:                        
+                    case 7:
                     default:
                         ModemErrorRate = 99;
                         break;
@@ -308,48 +305,6 @@ namespace MelBoxGsm
             OnGsmStatusReceived(Modem.OwnPhoneNumber, number);
         }
 
-        //  +CREG: 0,1 | +CREG: 1
-        private static void ParseNetworkRegistration(string input)
-        {
-            string[] items = input
-                .Replace(Answer_NetworkRegistration, string.Empty)
-                .Split(',');
-
-            //bei Abfrage items[1], bei Änderungsbenachrichtigung items[0]            
-            int.TryParse(items[items.Length - 1], out int stat);
-
-            string regString = "unbekannt";
-            switch (stat)
-            {
-                case 0:
-                    regString = "nicht registriert";
-                    break;
-                case 1:
-                    regString = "registriert";
-
-                    if (items.Length < 2) //unsolicated Status
-                    {
-                        Write("AT+CNUM"); //Eigene Telefonnumer-Nummer der SIM-Karte auslesen                 
-                        Write("AT+COPS?");//ProviderName?
-                        Write("AT+CSCA?");//SMS-Service-Center Adresse
-                    }
-                    break;
-                case 2:
-                    regString = "suche Netz";
-                    break;
-                case 3:
-                    regString = "verweigert";
-                    break;
-                case 4:
-                    regString = "unbekannt";
-                    break;
-                case 5:
-                    regString = "Roaming";
-                    break;
-            }
-
-            OnGsmStatusReceived(Modem.NetworkRegistration, regString);
-        }
 
         //  +CSCA: "+491710760000",145
         private static void ParseServiceCenterNumber(string input)
@@ -376,6 +331,46 @@ namespace MelBoxGsm
             OnGsmStatusReceived(Modem.ProviderName, name);
         }
 
+        //  +CREG: 0,1 | +CREG: 1
+        private static void ParseNetworkRegistration(string input)
+        {
+            string[] items = input
+                .Replace(Answer_NetworkRegistration, string.Empty)
+                .Split(',');
+
+            //bei Abfrage items[1], bei Änderungsbenachrichtigung items[0]            
+            int.TryParse(items[items.Length - 1], out int stat);
+
+            string regString = "unbekannt";
+            switch (stat)
+            {
+                case 0:
+                    regString = "nicht registriert";
+                    break;
+                case 1:
+                    regString = "registriert";
+
+                    if (items.Length < 2) //unsolicated Status
+                    {
+                        NetworkConnected();
+                    }
+                    break;
+                case 2:
+                    regString = "suche Netz";
+                    break;
+                case 3:
+                    regString = "verweigert";
+                    break;
+                case 4:
+                    regString = "unbekannt";
+                    break;
+                case 5:
+                    regString = "Roaming";
+                    break;
+            }
+
+            OnGsmStatusReceived(Modem.NetworkRegistration, regString);
+        }
         //  +CLIP: <number>, <type>, , [, <alpha>][, <CLI validity>]
         //  +CLIP: "+4942122317123",145,,,,0
         private static void ParseIncomingCallInfo(string input)
@@ -402,9 +397,9 @@ namespace MelBoxGsm
         {
             string[] sim = input.Replace(Answer_SimSlot, string.Empty).Split(',');
 
-            if (sim[sim.Length - 1].Trim() == "1")            
+            if (sim[sim.Length - 1].Trim() == "1")
                 OnGsmStatusReceived(Modem.SimSlot, true);             //"SIM-Schubfach: SIM-Karte erkannt"
-            else            
+            else
                 OnGsmStatusReceived(Modem.SimSlot, false);            //"SIM-Schubfach: SIM-Karte nicht erkannt"
         }
 
@@ -416,7 +411,7 @@ namespace MelBoxGsm
             switch (pinStatus)
             {
                 case "READY": //PIN has already been entered. No further entry needed
-                    Console.WriteLine("SIM-Karte: PIN ok");                    
+                    Console.WriteLine("SIM-Karte: PIN ok");
                     break;
                 case "SIM PIN": // ME (Mobile Equipment) is waiting for SIM PIN1
                     Console.WriteLine("Setze hinterlegte PIN für SIM-Karte.");
@@ -427,7 +422,7 @@ namespace MelBoxGsm
                     break;
             }
 
-            OnGsmStatusReceived(Modem.PinStatus, pinStatus.ToLower() ) ;
+            OnGsmStatusReceived(Modem.PinStatus, pinStatus.ToLower());
         }
 
         // +CCFC: 0,1,"+4916095285304",145
@@ -476,7 +471,7 @@ namespace MelBoxGsm
             }
         }
 
-#endregion
+        #endregion
     }
 
     public class GsmStatusArgs : EventArgs

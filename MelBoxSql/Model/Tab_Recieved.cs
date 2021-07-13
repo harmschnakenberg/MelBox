@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace MelBoxSql
 {
@@ -77,7 +76,7 @@ namespace MelBoxSql
             return Sql.SelectDataTable("Empfangen", query, Sql.Alias(columns));
         }
 
-       
+
         public static Recieved SelectRecieved(int Id)
         {
             string query = "SELECT * FROM " + TableName + " WHERE Id = " + Id + "; ";

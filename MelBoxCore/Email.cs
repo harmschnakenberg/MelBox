@@ -10,7 +10,7 @@ namespace MelBoxCore
 
     //Hinweis: Empfang von Emails ist mit System.Net.Mail in .NET Core (noch) nicht möglich.
     class Email
-    {       
+    {
         public static MailAddress From = new MailAddress("SMSZentrale@Kreutztraeger.de", "SMS-Zentrale");
 
         public static MailAddress Admin = new MailAddress("harm.Schnakenberg@Kreutztraeger.de", "MelBox2 Admin");
@@ -68,30 +68,30 @@ namespace MelBoxCore
         /// <param name="subject">Betreff. Leer: Wird aus message generiert.</param>
         /// <param name="emailId">Id zur Protokollierung der Sendungsverfolgung in der Datenbank</param>
         /// <param name="sendCC">Sende an Ständige Empänger in CC</param>
-        public static void Send (MailAddressCollection toList, string message, string subject = "", int emailId = 0, bool sendCC = true)
+        public static void Send(MailAddressCollection toList, string message, string subject = "", int emailId = 0, bool sendCC = true)
         {
             Console.WriteLine("Sende Email: " + message);
 
             if (emailId == 0) emailId = (int)(DateTime.UtcNow.Ticks % int.MaxValue);
 
-            MailMessage mail = new MailMessage(); 
+            MailMessage mail = new MailMessage();
 
             try
-            {                
+            {
                 #region From
                 mail.From = From;
                 mail.Sender = From;
                 #endregion
 
                 #region To               
-                foreach (var to in toList ?? new MailAddressCollection() { Admin } )
+                foreach (var to in toList ?? new MailAddressCollection() { Admin })
                 {
 #if DEBUG           //nur zu mir
                     if (to.Address.ToLower() != Admin.Address.ToLower())
                         Console.WriteLine("Send(): Emailadresse gesperrt: " + to.Address);
                     else
 #endif
-                        mail.To.Add(to);
+                    mail.To.Add(to);
                 }
 
                 if (sendCC)
@@ -103,7 +103,7 @@ namespace MelBoxCore
                             Console.WriteLine("Send(): Emailadresse CC gesperrt: " + cc.Address);
                         else
 #endif
-                            if (!mail.To.Contains(cc))
+                        if (!mail.To.Contains(cc))
                             mail.CC.Add(cc);
                     }
                 }
@@ -117,20 +117,20 @@ namespace MelBoxCore
                     mail.Subject = message.Replace(System.Environment.NewLine, "");
                 }
 
-                mail.Body =  message ;
+                mail.Body = message;
                 #endregion
 
                 #region Smtp
                 //Siehe https://docs.microsoft.com/de-de/dotnet/api/system.net.mail.smtpclient.sendasync?view=net-5.0
 
                 using var smtpClient = new SmtpClient();
-             
+
                 smtpClient.Host = SmtpHost;
                 smtpClient.Port = SmtpPort;
-                
-                if (SmtpUser.Length > 0 && SmtpPassword.Length > 0) 
+
+                if (SmtpUser.Length > 0 && SmtpPassword.Length > 0)
                     smtpClient.Credentials = new System.Net.NetworkCredential(SmtpUser, SmtpPassword);
-                
+
                 //smtpClient.UseDefaultCredentials = true;
 
                 smtpClient.EnableSsl = SmtpEnableSSL;

@@ -17,7 +17,7 @@ namespace MelBoxWeb
             string template = System.IO.File.ReadAllText(path);
 
             StringBuilder sb = new StringBuilder(template);
-            
+
             if (insert != null)
             {
                 foreach (var key in insert.Keys)
@@ -65,7 +65,7 @@ namespace MelBoxWeb
         {
             System.IO.Stream body = context.Request.InputStream;
             System.IO.StreamReader reader = new System.IO.StreamReader(body);
-                      
+
             string[] pairs = reader.ReadToEnd().Split('&');
 
             Dictionary<string, string> payload = new Dictionary<string, string>();
@@ -74,8 +74,8 @@ namespace MelBoxWeb
             {
                 string[] item = pair.Split('=');
 
-                if (item.Length > 1)             
-                    payload.Add(item[0], WebUtility.UrlDecode(item[1]));                                
+                if (item.Length > 1)
+                    payload.Add(item[0], WebUtility.UrlDecode(item[1]));
             }
 
             return payload;
@@ -111,7 +111,7 @@ namespace MelBoxWeb
 
                 string guid = Guid.NewGuid().ToString("N");
 
-                MelBoxSql.Contact user = MelBoxSql.Tab_Contact.SelectContact(id); 
+                MelBoxSql.Contact user = MelBoxSql.Tab_Contact.SelectContact(id);
 
                 LogedInHash.Add(guid, user);
 

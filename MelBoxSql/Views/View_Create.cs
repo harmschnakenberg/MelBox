@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MelBoxSql
+﻿namespace MelBoxSql
 {
     public static partial class Sql
     {
@@ -46,6 +42,7 @@ namespace MelBoxSql
 
             const string query5 = "CREATE VIEW " + Blocked_ViewName + " AS " +
                                     "SELECT Message.Id AS Id, Content As Nachricht, StartBlockHour || ' Uhr' As Beginn, EndBlockHour || ' Uhr' As Ende, " +
+                                    "" +
                                     "BlockedDays As Gesperrt " +
                                     //"(SELECT BlockedDays & 1 > 0) AS Mo, (SELECT BlockedDays & 2 > 0) AS Di, (SELECT BlockedDays & 4 > 0) AS Mi, (SELECT BlockedDays & 8 > 0) AS Do, (SELECT BlockedDays & 16 > 0) AS Fr, (SELECT BlockedDays & 32 > 0) AS Sa, (SELECT BlockedDays & 64 > 0) AS So " +
                                     "FROM Message WHERE BlockedDays > 0";

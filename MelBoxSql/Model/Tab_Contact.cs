@@ -1,21 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace MelBoxSql
 {
     public static class Tab_Contact
     {
         internal const string TableName = "Contact";
-      
-       // [Flags]
+
+        // [Flags]
         public enum Communication
         {
             NaN = -1,
             Unknown = 0,
             Sms = 1,
             Email = 2,
-           // SmsAndEmail = 3,
+            // SmsAndEmail = 3,
             AlwaysEmail = 4
         }
 
@@ -24,7 +23,7 @@ namespace MelBoxSql
             Dictionary<string, object> set = new Dictionary<string, object>();
 
             if (contact.Id > 0) set.Add(nameof(contact.Id), contact.Id);
-            if (contact.EntryTime != DateTime.MinValue ) set.Add(nameof(contact.EntryTime), contact.EntryTime);
+            if (contact.EntryTime != DateTime.MinValue) set.Add(nameof(contact.EntryTime), contact.EntryTime);
             if (contact.Name != null) set.Add(nameof(contact.Name), contact.Name);
             if (contact.Password != null) set.Add(nameof(contact.Password), contact.Password);
             if (contact.Accesslevel >= 0) set.Add(nameof(contact.Accesslevel), contact.Accesslevel);
@@ -40,7 +39,7 @@ namespace MelBoxSql
 
         public static bool CreateTable()
         {
-                Dictionary<string, string> columns = new Dictionary<string, string>
+            Dictionary<string, string> columns = new Dictionary<string, string>
                 {
                     { nameof(Contact.Id), "INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT" },
                     { nameof(Contact.EntryTime),  "TEXT  DEFAULT CURRENT_TIMESTAMP" },
@@ -86,7 +85,7 @@ namespace MelBoxSql
                 CompanyId = 1 // ohne Zuordnung aufgrund SELECT-Anweisung keine Darstellung in Weboberfläche.
             };
             contact.Name = $"NeuerBenutzer '{contact.KeyWord}' vom {contact.EntryTime.ToShortDateString()}";
-          
+
             if (ulong.TryParse(phone.Trim('+'), out ulong _phone))
                 contact.Phone = _phone;
 
@@ -126,7 +125,7 @@ namespace MelBoxSql
 
             DateTime.TryParse(dt.Rows[0][nameof(contact.EntryTime)].ToString(), out DateTime entryTime);
             string name = dt.Rows[0][nameof(contact.Name)].ToString();
-           // string password = dt.Rows[0][nameof(contact.Password)].ToString();
+            // string password = dt.Rows[0][nameof(contact.Password)].ToString();
             int.TryParse(dt.Rows[0][nameof(contact.CompanyId)].ToString(), out int companyId);
             int.TryParse(dt.Rows[0][nameof(contact.Accesslevel)].ToString(), out int accessLevel);
             string email = dt.Rows[0][nameof(contact.Email)].ToString();
@@ -146,7 +145,7 @@ namespace MelBoxSql
             contact.KeyWord = keyWord;
             contact.MaxInactiveHours = maxInactiveHours;
             contact.Via = (Tab_Contact.Communication)via;
-         
+
             return contact;
         }
 
@@ -176,7 +175,7 @@ namespace MelBoxSql
             }
 
             int.TryParse(dt.Rows[0][0].ToString(), out int contactId);
-           
+
             return contactId;
         }
 
@@ -186,7 +185,7 @@ namespace MelBoxSql
                 " FROM " + TableName +
                 " JOIN " + Tab_Company.TableName + " ON Company.Id = Contact.CompanyId" + //IFNULL() da sonst Kontakte ohne Firmeneintrag nicht angezeigt werden.
                 " WHERE Accesslevel " + operation + " " + accesslevel;
-                
+
             if (contactId > 0)
                 query += " AND Contact.Id = " + contactId;
 
@@ -213,7 +212,7 @@ namespace MelBoxSql
                 " WHERE Email LIKE '%@%' AND Via IN (4, 5, 6)" +
                 " ; ";
 
-           return Sql.SelectDataTable("Ständige EMpfänger", query, null);
+            return Sql.SelectDataTable("Ständige EMpfänger", query, null);
         }
 
         public static string SelectName_Company_City(int contactId)
@@ -229,7 +228,7 @@ namespace MelBoxSql
 
         #region Hilfs-Methoden zu Kontakten
 
-            public static string Encrypt(string password)
+        public static string Encrypt(string password)
         {
             byte[] data = System.Text.Encoding.UTF8.GetBytes(password);
             data = new System.Security.Cryptography.SHA256Managed().ComputeHash(data);
@@ -307,21 +306,21 @@ namespace MelBoxSql
         }
 
         public Contact(string name)
-        {           
-            Name = name;           
+        {
+            Name = name;
         }
 
         public int Id { get; set; }
 
         private System.DateTime _EntryTime = DateTime.MinValue;
-        public System.DateTime EntryTime 
-        { 
+        public System.DateTime EntryTime
+        {
             get
-            {return _EntryTime;} 
-            
+            { return _EntryTime; }
+
             set
             { _EntryTime = value; }
-        } 
+        }
 
         public string Name { get; set; } = null;
 
@@ -332,26 +331,31 @@ namespace MelBoxSql
         public int Accesslevel { get; set; } = -1;
 
         private string _Email = null;
-        public string Email { 
-            get { 
-                return _Email; 
+        public string Email
+        {
+            get
+            {
+                return _Email;
             }
-            
-            set { 
-                if (Tab_Contact.IsEmail(value)) 
-                    _Email = value; 
-            } 
+
+            set
+            {
+                if (Tab_Contact.IsEmail(value))
+                    _Email = value;
+            }
         }
 
         public ulong Phone { get; set; }
 
         private string _KeyWord = null;
-        public string KeyWord { 
+        public string KeyWord
+        {
             get { return _KeyWord; }
-            set { 
-                if (value != null) 
+            set
+            {
+                if (value != null)
                     _KeyWord = value.ToLower();  //nur Kleinbuchstaben
-            } 
+            }
         }
 
         public int MaxInactiveHours { get; set; } = -1;

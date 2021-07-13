@@ -1,10 +1,10 @@
 ﻿using Grapevine;
+using MelBoxSql;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text;
 using System.Threading.Tasks;
-using MelBoxSql;
-using System.Data;
 
 namespace MelBoxWeb
 {
@@ -36,7 +36,7 @@ namespace MelBoxWeb
         [RestRoute("Get", "/in")]
         [RestRoute("Get", "/in/{firstDate}")]
         public static async Task InBox(IHttpContext context)
-        {            
+        {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
             bool authorized = false;
@@ -62,7 +62,7 @@ namespace MelBoxWeb
 
         [RestRoute("Get", "/out")]
         public static async Task OutBox(IHttpContext context)
-        {            
+        {
             System.Data.DataTable sent = MelBoxSql.Sql.Sent_View_Last(100);
 
             string table = Html.DropdownExplanation();
@@ -99,7 +99,7 @@ namespace MelBoxWeb
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
 
-            if (guid == null || !Server.LogedInHash.TryGetValue(guid, out Contact user) )
+            if (guid == null || !Server.LogedInHash.TryGetValue(guid, out Contact user))
             {
                 await Home(context);
                 return;
@@ -154,7 +154,7 @@ namespace MelBoxWeb
         public static async Task ShiftFromDate(IHttpContext context)
         {
             Server.ReadCookies(context).TryGetValue("MelBoxId", out string guid);
-           
+
             if (!Server.LogedInHash.TryGetValue(guid, out Contact user))
             {
                 await Home(context);
@@ -184,7 +184,7 @@ namespace MelBoxWeb
                 { "##EndOptions##", Tab_Shift.HtmlOptionHour(shift.End.ToLocalTime().Hour) },
                 { "##Route##", "new" }
             };
-                       
+
             string form = Server.Page(Server.Html_FormShift, pairs);
 
             DataTable dt = Sql.Shift_View();
@@ -227,7 +227,7 @@ namespace MelBoxWeb
                     end = endDate.Date.AddHours(endHour); //Lokale Zeit!          
             #endregion
 
-          
+
             bool success = MelBoxSql.Tab_Shift.Insert(shiftContactId, start, end);
             string alert;
 
@@ -452,7 +452,7 @@ namespace MelBoxWeb
             bool viaSms = account.Via.HasFlag(Tab_Contact.Communication.Sms);
             bool viaEmail = account.Via.HasFlag(Tab_Contact.Communication.Email);
             bool viaAlwaysEmail = account.Via.HasFlag(Tab_Contact.Communication.AlwaysEmail);
-            
+
             string userRole = "Aspirant";
             if (account.Accesslevel >= Server.Level_Admin) userRole = "Admin";
             else if (account.Accesslevel >= Server.Level_Reciever) userRole = "Benutzer";
@@ -465,7 +465,7 @@ namespace MelBoxWeb
                 { "##Id##", account.Id.ToString() },
                 { "##Name##", account.Name },
                 { "##Accesslevel##", account.Accesslevel.ToString() },
-                { "##UserRole##", userRole },                
+                { "##UserRole##", userRole },
                 { "##UserAccesslevel##", user.Accesslevel.ToString() },
                 { "##CompanyId##", account.CompanyId.ToString() },
                 { "##CompanyName##", company.Name },
@@ -604,7 +604,7 @@ namespace MelBoxWeb
             Contact set = new Contact
             {
                 Name = name,
-                EntryTime = DateTime.UtcNow,                
+                EntryTime = DateTime.UtcNow,
                 KeyWord = keyWord
             };
 
@@ -661,7 +661,7 @@ namespace MelBoxWeb
 
             await Server.PageAsync(context, "Benutzerkonto ändern", alert);
         }
-       
+
         [RestRoute("Post", "/account/delete/{id:num}")]
         public static async Task AccountDelete(IHttpContext context)
         {
@@ -890,7 +890,7 @@ namespace MelBoxWeb
             {
                 { "##readonly##", "readonly" },
                 { "##disabled##", string.Empty },
-                { "##Name##", name },                
+                { "##Name##", name },
                 { "##CompanyList##", Tab_Company.SelectCompanyAllToHtmlOption() },
                 { "##NewContact##", Html.ButtonNew("account") }
             };
@@ -987,18 +987,18 @@ namespace MelBoxWeb
                 prio = 3;
                 titel = "Login ";
                 string level = "Beobachter";
-                
+
 
                 System.Net.Cookie cookie = new System.Net.Cookie("MelBoxId", guid, "/");
 
                 context.Response.Cookies.Add(cookie);
 
                 if (Server.LogedInHash.TryGetValue(guid, out Contact user))
-                {                    
+                {
                     if (user.Accesslevel >= Server.Level_Admin)
                         level = "Admin";
                     else if (user.Accesslevel >= Server.Level_Reciever)
-                        level = "Benutzer";                    
+                        level = "Benutzer";
                 }
 
                 text = $"Willkommen {level} {name}";

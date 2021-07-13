@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MelBoxGsm;
+using System;
 using System.IO;
-using MelBoxGsm;
+using System.Text;
 
 namespace MelBoxCore
 {
@@ -28,7 +27,7 @@ namespace MelBoxCore
                             ";;; Debug-Word für GSM-Modem-Kommunikation:\r\n" +
                             $";{nameof(Gsm.Debug)}={Gsm.Debug}\r\n" +
 
-                            ";;; Sms-Text zur Prüfung des Sendewegs (case-insensitive):\r\n" + 
+                            ";;; Sms-Text zur Prüfung des Sendewegs (case-insensitive):\r\n" +
                             $";{nameof(Program.SmsWayValidationTrigger)}={Program.SmsWayValidationTrigger}\r\n" +
 
                             "\r\n;;; Tagesstunde zu der tägliche Aufgaben angestoßen werden (Routine-Meldung, DB-Backup,..):\r\n" +
@@ -36,7 +35,7 @@ namespace MelBoxCore
 
                             "\r\n;;; ID des Kontakts aus der Tabelle 'Contact', der als Standardempfänger eingesetzt werden soll:\r\n" +
                             $";{nameof(MelBoxSql.Tab_Shift.DefaultShiftContactId)}={MelBoxSql.Tab_Shift.DefaultShiftContactId}\r\n" +
-                            
+
                             "\r\n[Gsm-Modem]\r\n" +
                             ";;; Telefonnummer für Debug-Meldungen (z.B. Routine-Meldung):\r\n" +
                             $";{nameof(Gsm.AdminPhone)}={Gsm.AdminPhone}\r\n" +
@@ -58,7 +57,7 @@ namespace MelBoxCore
                             $";{nameof(Email.SmtpHost)}={Email.SmtpHost}\r\n" +
                             $";{nameof(Email.SmtpPort)}={Email.SmtpPort}\r\n" +
                             $";{nameof(Email.SmtpEnableSSL)}={Email.SmtpEnableSSL}\r\n" +
-                            
+
 
                              "\r\n;;; Angezeigte Absenderadresse von Emails aus dem Programm:\r\n" +
                             $";{nameof(Email.From)}={Email.From}\r\n" +
@@ -107,7 +106,7 @@ namespace MelBoxCore
                             break;
                         case nameof(Program.HourOfDailyTasks):
                             if (int.TryParse(val, out int i))
-                             Program.HourOfDailyTasks = i;
+                                Program.HourOfDailyTasks = i;
                             break;
                         case nameof(MelBoxSql.Tab_Shift.DefaultShiftContactId):
                             if (int.TryParse(val, out i))
@@ -128,7 +127,7 @@ namespace MelBoxCore
                         case nameof(Gsm.RelayCallsToPhone):
                             if (ulong.TryParse(val.Trim('+'), out phone))
                                 Gsm.RelayCallsToPhone = phone;
-                            break;                            
+                            break;
                         case nameof(Gsm.SerialPortName):
                             Gsm.SerialPortName = val;
                             break;
@@ -160,7 +159,7 @@ namespace MelBoxCore
                         case nameof(Email.SmtpEnableSSL):
                             if (bool.TryParse(val, out bool b))
                                 Email.SmtpEnableSSL = b;
-                            break;                            
+                            break;
                     }
 
                 }

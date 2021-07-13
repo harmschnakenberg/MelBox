@@ -6,15 +6,15 @@ namespace MelBoxGsm
     public partial class Gsm
     {
         #region Debug
-        public static int Debug { get; set; } = 7;
+        public static int Debug { get; set; } = 4;
 
         [Flags]
         public enum DebugCategory
         {
-            None,
-            GsmAnswer,
-            GsmStatus,
-            GsmRequest
+            None = 0,
+            GsmRequest = 1,
+            GsmAnswer = 2,
+            GsmStatus = 4            
         }
         #endregion
 
@@ -22,7 +22,7 @@ namespace MelBoxGsm
 
         public static event EventHandler SerialPortDisposed;
 
-        public static string SerialPortName { get; set; } = SerialPort.GetPortNames()[SerialPort.GetPortNames().Length - 1];
+        public static string SerialPortName { get; set; } = SerialPort.GetPortNames().Length == 0 ? null : SerialPort.GetPortNames()[SerialPort.GetPortNames().Length - 1];
         public static int SerialPortBaudRate { get; set; } = 38400;
 
         public static int SimPin { get; set; } = 0000;
@@ -42,7 +42,7 @@ namespace MelBoxGsm
         }
 
         private static void Port_Disposed(object sender, EventArgs e)
-        {            
+        {
             SerialPortDisposed?.Invoke(null, e);
         }
 
@@ -58,7 +58,7 @@ namespace MelBoxGsm
         public static void Write(string request)
         {
             if (Port == null || !Port.IsOpen)
-                Connect();
+                if (!Connect()) return;
 
             Port.WriteLine(request);
         }
@@ -69,7 +69,7 @@ namespace MelBoxGsm
 
             if ((Debug & (int)DebugCategory.GsmAnswer) > 0)
             {
-                Console.ForegroundColor = ConsoleColor.DarkGreen;                
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
                 Console.WriteLine(input);
                 Console.ForegroundColor = ConsoleColor.Gray;
             }
@@ -137,13 +137,13 @@ namespace MelBoxGsm
                     //  ^SCKS: <mode>,<SimStatus>'
                     else if (line.Contains(Answer_SimSlot))
                     {
-                        ParseISimTrayStatus(line);                        
+                        ParseISimTrayStatus(line);
                     }
 
                     // +CPIN: READY
                     else if (line.Contains(Answer_Pin))
                     {
-                        ParseSimPin(line);                        
+                        ParseSimPin(line);
                     }
 
                     // +CCFC: 0,1,"+4916095285304",145

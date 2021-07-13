@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace MelBoxWeb
 {
@@ -14,7 +13,7 @@ namespace MelBoxWeb
 
     public partial class Server
     {
-        
+
         private static IRestServer restServer;
 
         public static int Level_Admin { get; set; } = 9000; //Benutzerverwaltung u. -Einteilung

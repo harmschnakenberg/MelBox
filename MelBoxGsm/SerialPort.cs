@@ -1,7 +1,6 @@
 ﻿using System;
-using System.IO.Ports;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.IO.Ports;
 using System.Timers;
 
 namespace MelBoxGsm
@@ -11,7 +10,6 @@ namespace MelBoxGsm
     /// </summary>
     public class ReliableSerialPort : SerialPort
     {
-
 
         #region Connection
         public ReliableSerialPort(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits)
@@ -70,8 +68,6 @@ namespace MelBoxGsm
         #endregion
 
         #region Read
-        public const string Terminator = "\r\nOK\r\n";
-
         private void ContinuousRead()
         {
             try
@@ -91,12 +87,12 @@ namespace MelBoxGsm
                     }
                     catch (Exception exception)
                     {
-                        Console.WriteLine("ContinuousRead(): Lesefehler Bitstream von COM-Port:\r\n" + 
+                        Console.WriteLine("ContinuousRead(): Lesefehler Bitstream von COM-Port:\r\n" +
                             ">" + System.Text.Encoding.UTF8.GetString(buffer) + "<" + Environment.NewLine +
-                            exception.GetType() + Environment.NewLine + 
-                            exception.Message + Environment.NewLine + 
-                            exception.InnerException + Environment.NewLine + 
-                            exception.Source + Environment.NewLine + 
+                            exception.GetType() + Environment.NewLine +
+                            exception.Message + Environment.NewLine +
+                            exception.InnerException + Environment.NewLine +
+                            exception.Source + Environment.NewLine +
                             exception.StackTrace);
 #if DEBUG
                         throw exception;
@@ -108,11 +104,11 @@ namespace MelBoxGsm
             }
             catch (Exception exception)
             {
-                Console.WriteLine("ContinuousRead(): Lesefehler bei Beginn. COM-Port:\r\n" +  
-                    exception.GetType() + Environment.NewLine + 
-                    exception.Message + Environment.NewLine + 
-                    exception.InnerException + Environment.NewLine + 
-                    exception.Source + Environment.NewLine + 
+                Console.WriteLine("ContinuousRead(): Lesefehler bei Beginn. COM-Port:\r\n" +
+                    exception.GetType() + Environment.NewLine +
+                    exception.Message + Environment.NewLine +
+                    exception.InnerException + Environment.NewLine +
+                    exception.Source + Environment.NewLine +
                     exception.StackTrace);
 #if DEBUG
                 throw exception;
@@ -123,6 +119,7 @@ namespace MelBoxGsm
         public delegate void DataReceivedEventHandler(object sender, DataReceivedArgs e);
         new public event EventHandler<DataReceivedArgs> DataReceived;
 
+        public const string Terminator = "\r\nOK\r\n";
         static string recLine = string.Empty;
 
         /// <summary>
@@ -137,7 +134,7 @@ namespace MelBoxGsm
                 recLine += rec;
 
                 //Melde empfangne Daten, wenn...
-                if (recLine.Contains(Terminator) || recLine.EndsWith("\r\n") || recLine.Contains("ERROR")) //
+                if (recLine.Contains(Terminator) || recLine.EndsWith(Environment.NewLine) || recLine.Contains("ERROR")) //
                 {
                     var handler = DataReceived;
                     if (handler != null)
@@ -195,7 +192,7 @@ namespace MelBoxGsm
             {
                 sendTimer = new Timer
                 {
-                    Interval = ReadTimeout + WriteTimeout + 300 //min 100 ms nach Empfang von Modem
+                    Interval = ReadTimeout + WriteTimeout // + 300 //min 100 ms nach Empfang von Modem
                 };
                 sendTimer.Elapsed += new ElapsedEventHandler(WriteQueue);
                 sendTimer.AutoReset = true;
