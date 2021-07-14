@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO.Ports;
+using System.Text.RegularExpressions;
 using System.Timers;
 
 namespace MelBoxGsm
@@ -126,7 +127,7 @@ namespace MelBoxGsm
 
         public const string Terminator = "\r\nOK\r\n";
         static string recLine = string.Empty;
-       
+
         /// <summary>
         /// Sammelt die vom Modem empfangenen Daten für die Weiterleitung
         /// </summary>
@@ -138,8 +139,14 @@ namespace MelBoxGsm
                 string rec = System.Text.Encoding.UTF8.GetString(data);
                 recLine += rec;
 
-                //Melde empfangne Daten, wenn... Ausgeführt, Fehler oder "unsolicited result code"
-                if (recLine.Contains(Terminator) || recLine.Contains("ERROR") || recLine.EndsWith(Environment.NewLine + Environment.NewLine) )
+                //Filter Erfolgreich, Fehler, Netzwerkstatus, neue SMS, neuer Statusreport
+                MatchCollection mc = Regex.Matches(recLine, @"(\r\nOK\r\n)|(ERROR)|(\+CREG: )|(\+CMTI: )|(\+CDSI: )");
+
+                //Console.WriteLine(mc[0]);
+
+                //Melde empfangne Daten, wenn... Ausgeführt oder Fehler
+                //if (recLine.Contains(Terminator) || recLine.Contains("ERROR") || recLine.Contains("+CREG:"))
+                if (mc.Count > 0)
                 {               
                     var handler = DataReceived;
                     if (handler != null)

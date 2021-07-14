@@ -124,6 +124,8 @@ namespace MelBoxGsm
 
                     Ask_SmsDelete(index);
                 }
+
+
             }
             catch (Exception ex)
             {
@@ -136,51 +138,67 @@ namespace MelBoxGsm
         {
             //Dies ist festgestellt als ein Statusreport
 
-            //<index> Index
-            int.TryParse(header[(int)HeaderSms.Index], out int index);
-
-            //<stat> Status
-            string status = header[(int)HeaderSms.MessageStatus].Trim('"');
-
-            //<oa>/<da> OriginatingAddress/ DestinationAddress | <fo> First Oxctet
-            string sender = header[(int)HeaderSms.Sender].Trim('"');
-            if (sender.StartsWith("002B")) sender = DecodeUcs2(sender); // hex 002B = '+'; Encoding in Ucs2
-
-            //[<alpha>] PhoneBookentry für <oa>/<da> | <mr> MessageReference
-            int.TryParse(header[(int)HeaderStatusReport.MessageReference], out int reference);
-
-            //<scts> ServiceProvider TimeStamp
-            DateTime TimeUtc = ParseUtcTime(header[(int)HeaderStatusReport.ProviderDate].Trim('"'), header[(int)HeaderStatusReport.ProviderTime].Trim('"'));
-
-            //<dt> DischargeTime
-            DateTime DischargeTimeUtc = ParseUtcTime(header[(int)HeaderStatusReport.DischargeDate].Trim('"'), header[(int)HeaderStatusReport.DischargeTime].Trim('"'));
-
-            //<st> Status
-            int.TryParse(header[(int)HeaderStatusReport.SendStatus], out int SendStatus);
-
-            StatusReport Report = new StatusReport
+            try
             {
-                RawHeader = string.Join(",", header),
-                Index = index,
-                MessageStatus = status,
-                ServiceCenterTimeStampTimeUtc = TimeUtc,
-                DischargeTimeUtc = DischargeTimeUtc,
-                InternalReference = reference,
-                SendStatus = SendStatus
-            };
+                //<index> Index
+                int.TryParse(header[(int)HeaderSms.Index], out int index);
 
-            #region Sendungsnachverfolgung abschließen
-            foreach (ParseSms sms in WaitingForStatusReport) //siehe auch ParseMessageReference() 
-            {
-                if (sms.InternalReference == reference)
+                //<stat> Status
+                string status = header[(int)HeaderSms.MessageStatus].Trim('"');
+
+                //<oa>/<da> OriginatingAddress/ DestinationAddress | <fo> First Oxctet
+                string sender = header[(int)HeaderSms.Sender].Trim('"');
+                if (sender.StartsWith("002B")) sender = DecodeUcs2(sender); // hex 002B = '+'; Encoding in Ucs2
+
+                //[<alpha>] PhoneBookentry für <oa>/<da> | <mr> MessageReference
+                int.TryParse(header[(int)HeaderStatusReport.MessageReference], out int reference);
+
+                //<scts> ServiceProvider TimeStamp
+                DateTime TimeUtc = ParseUtcTime(header[(int)HeaderStatusReport.ProviderDate].Trim('"'), header[(int)HeaderStatusReport.ProviderTime].Trim('"'));
+
+                //<dt> DischargeTime
+                DateTime DischargeTimeUtc = ParseUtcTime(header[(int)HeaderStatusReport.DischargeDate].Trim('"'), header[(int)HeaderStatusReport.DischargeTime].Trim('"'));
+
+                //<st> Status
+                int.TryParse(header[(int)HeaderStatusReport.SendStatus], out int SendStatus);
+
+                StatusReport Report = new StatusReport
                 {
+                    RawHeader = string.Join(",", header),
+                    Index = index,
+                    MessageStatus = status,
+                    ServiceCenterTimeStampTimeUtc = TimeUtc,
+                    DischargeTimeUtc = DischargeTimeUtc,
+                    InternalReference = reference,
+                    SendStatus = SendStatus
+                };
+
+                #region Sendungsnachverfolgung abschließen
+
+                if (WaitingForStatusReport.Exists(x => x.Index == reference))
+                {
+                    var sms = WaitingForStatusReport.Find(x => x.Index == reference);
                     Console.WriteLine($"Erwartete Empfangsbestätigung eingetroffen für Nachricht [{sms.InternalReference}] {sms.Message}");
                     WaitingForStatusReport.Remove(sms);
                 }
-            }
-            #endregion 
 
-            StatusReportRecievedEvent?.Invoke(null, Report);
+                //foreach (ParseSms sms in WaitingForStatusReport) //siehe auch ParseMessageReference() 
+                //{
+                //    if (sms.InternalReference == reference)
+                //    {
+                //        Console.WriteLine($"Erwartete Empfangsbestätigung eingetroffen für Nachricht [{sms.InternalReference}] {sms.Message}");
+                //        WaitingForStatusReport.Remove(sms); //BÖSE
+                //    }
+                //}
+
+                #endregion
+
+                StatusReportRecievedEvent?.Invoke(null, Report);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"FEHLER ParseNewStatusReport() {ex.GetType()}\r\n{ex.Message}\r\n{ex.StackTrace}");
+            }
         }
 
         private static void ParseNewSms(string[] header, string[] line)
@@ -239,7 +257,7 @@ namespace MelBoxGsm
                     Sender = sender,
                     SenderPhonebookEntry = SenderPhoneBookEntry,
                     TimeUtc = TimeUtc,
-                    Message = Umlaute(messageText) // Sinnvoll?
+                    Message = UmlauteDecode(messageText) // Sinnvoll?
                 };
 
 
@@ -283,7 +301,7 @@ namespace MelBoxGsm
             return time;
         }
 
-        private static string Umlaute(string input)
+        private static string UmlauteDecode(string input)
         {
             return input.Replace('[', 'Ä').Replace('\\', 'Ö').Replace('^', 'Ü').Replace('{', 'ä').Replace('|', 'ö').Replace('~', 'ü');
         }

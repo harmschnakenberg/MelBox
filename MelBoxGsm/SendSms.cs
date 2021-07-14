@@ -28,7 +28,7 @@ namespace MelBoxGsm
         /// <param name="message"></param>
         public static void Ask_SmsSend(string phone, string message)
         {
-            SendList.Enqueue(new Tuple<string, string>(phone, message)); //Anstellen
+            SendList.Enqueue(new Tuple<string, string>(phone, ReplaceUmlaute(message) ) ); //Anstellen
 
             if (sendTimer == null) //Timer erstellen
             {
@@ -142,6 +142,12 @@ namespace MelBoxGsm
             {
                 WaitingForStatusReport.Remove(sms);
             }
+        }
+
+
+        private static string ReplaceUmlaute(string input)
+        {
+            return input.Replace("Ä", "Ae").Replace("Ö", "Oe").Replace("Ü", "Ue").Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue").Replace("ß", "ss");
         }
 
     }
