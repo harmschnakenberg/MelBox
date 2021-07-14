@@ -6,7 +6,7 @@ namespace MelBoxGsm
     public partial class Gsm
     {
         #region Debug
-        public static int Debug { get; set; } = 4;
+        public static int Debug { get; set; }
 
         [Flags]
         public enum DebugCategory

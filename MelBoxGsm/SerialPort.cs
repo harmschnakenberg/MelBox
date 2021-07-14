@@ -85,6 +85,7 @@ namespace MelBoxGsm
                         Buffer.BlockCopy(buffer, 0, dst, 0, count);
                         OnDataReceived(dst);
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception exception)
                     {
                         Console.WriteLine("ContinuousRead(): Lesefehler Bitstream von COM-Port:\r\n" +
@@ -95,13 +96,16 @@ namespace MelBoxGsm
                             exception.Source + Environment.NewLine +
                             exception.StackTrace);
 #if DEBUG
+                        
                         throw exception;
 #endif
                     }
+#pragma warning restore CA1031 // Do not catch general exception types
 
                     kickoffRead();
                 }, null)); kickoffRead();
             }
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception exception)
             {
                 Console.WriteLine("ContinuousRead(): Lesefehler bei Beginn. COM-Port:\r\n" +
@@ -114,6 +118,7 @@ namespace MelBoxGsm
                 throw exception;
 #endif
             }
+#pragma warning restore CA1031 // Do not catch general exception types
         }
 
         public delegate void DataReceivedEventHandler(object sender, DataReceivedArgs e);
@@ -121,7 +126,7 @@ namespace MelBoxGsm
 
         public const string Terminator = "\r\nOK\r\n";
         static string recLine = string.Empty;
-
+       
         /// <summary>
         /// Sammelt die vom Modem empfangenen Daten für die Weiterleitung
         /// </summary>
@@ -133,9 +138,9 @@ namespace MelBoxGsm
                 string rec = System.Text.Encoding.UTF8.GetString(data);
                 recLine += rec;
 
-                //Melde empfangne Daten, wenn...
-                if (recLine.Contains(Terminator) || recLine.EndsWith(Environment.NewLine) || recLine.Contains("ERROR")) //
-                {
+                //Melde empfangne Daten, wenn... Ausgeführt, Fehler oder "unsolicited result code"
+                if (recLine.Contains(Terminator) || recLine.Contains("ERROR") || recLine.EndsWith(Environment.NewLine + Environment.NewLine) )
+                {               
                     var handler = DataReceived;
                     if (handler != null)
                     {

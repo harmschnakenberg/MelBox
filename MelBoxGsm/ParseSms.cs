@@ -224,7 +224,7 @@ namespace MelBoxGsm
 
                 messageText = messageText.Trim();
 
-                if (!messageText.StartsWith("00") && messageText.Length > 20) //Kein Leerzeichen, startet mit '00' und lang: Vermutung Sms-Inhalt ist in UCS2 Formatiert wegen Sonderzeichen z.B. °C, ä, ß...            
+                if (messageText.StartsWith("00") && messageText.Length > 20) //Kein Leerzeichen, startet mit '00' und lang: Vermutung Sms-Inhalt ist in UCS2 Formatiert wegen Sonderzeichen z.B. °C, ä, ß...            
                     messageText = DecodeUcs2(messageText);
                 //else
                 //{
@@ -239,7 +239,7 @@ namespace MelBoxGsm
                     Sender = sender,
                     SenderPhonebookEntry = SenderPhoneBookEntry,
                     TimeUtc = TimeUtc,
-                    Message = messageText // Sinnvoll?
+                    Message = Umlaute(messageText) // Sinnvoll?
                 };
 
 
@@ -258,7 +258,7 @@ namespace MelBoxGsm
             }
             catch (Exception ex)
             {
-                throw new Exception($"FEHLER ParseNewSms(): {ex.GetType()}\r\n{ex.Message}");
+                throw new Exception($"FEHLER ParseNewSms(): {ex.GetType()}\r\n{ex.Message}\r\n{ex.StackTrace}");
             }
         }
 
@@ -279,7 +279,13 @@ namespace MelBoxGsm
                 time = time.AddHours(timeZoneQuarters / -4);
             }
 
+            Console.WriteLine("Ausgelesene Zeit: " + time);
             return time;
+        }
+
+        private static string Umlaute(string input)
+        {
+            return input.Replace('[', 'Ä').Replace('\\', 'Ö').Replace('^', 'Ü').Replace('{', 'ä').Replace('|', 'ö').Replace('~', 'ü');
         }
 
         public static string DecodeUcs2(string ucs2)
