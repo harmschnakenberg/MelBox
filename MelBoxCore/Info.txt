@@ -1,13 +1,34 @@
 ﻿MelBox2 ReadMe
 
+MelBox2 ist ein Konsolenprogramm, das ein per COM-Port (USB) angeschlossenes Modem über AT-Befehle betreibt.
+Empfangene SMS werden in eine Datenbank geschrieben. 
+Sind in der Datenbank für die Empfangszeit Empfänger zur Weiterleitung festgelegt (Bereitschaft) 
+und die Nachricht anhand ihres Inhalts zu diesem Zeitpunkt nicht zur Weiterleitung gesperrt (Sperre), 
+wird eine Kopie der Nachricht an den oder die Empfänger gesendet.
+Empfänger können per Email, SMS oder beidem benachrichtigt werden. 
+Der Versand wird in der Datenbank protokolliert.
+Versand an 'Dauerempfänger' die unabhängig von Uhrzeit und Sperre alle Nachrichten per EMail weitergeleitet bekommen (Service, MelBox2-Admin) wird nicht protokolliert.
+Für SMS wird der Mobilfunknetzservice 'Empfangsbestätigung' genutzt, um festzustellen, ob die Nachricht beim Empfänger angekommen ist.
+Der zurückgemeldte Empfangsstaus wird ebenfalls in der Datenbank vermerkt.
+
+Sender können 
+
+Die Datenbank kann übder eine Weboberfläche gesichtet und manipuliert werden.
+Standard ist http://localhost:1234/
+Die Weboberfläche ist ohne Freigabe im Betriebssystem und Einstellung der Firewall nur lokal bedienbar.
+
 Bugs
 -----
-1)	Empfangsbestätigung bei versendeten SMS?
-2)	Regel 4 von MelBox nicht umgesetzt (Nachrichten werdne einzeln gesperrt). Nachpflegen?
-3)	SMS mit Sonderzeichen (°C, ö,Ä, ß, &, *). ERLEDIGT
+1)	Empfangsbestätigung bei versendeten SMS? 
+	-> ok - weiter testen
+2)	Regel 4 von MelBox nicht umgesetzt (Nachrichten werden einzeln gesperrt). Nachpflegen?
+3)	SMS mit Sonderzeichen (°C, ö,Ä, ß, &, *). 
+	--> Für Sonderzeichen außerhalb GSM-Encoding erledigt durch UCS2 Encoding
+	-->	Bei GSM-Encoding durch Zeichenersetzung - weiter testen
 
 ToDo
 -----
-1)	Vieleicht Web-Oberfläche in eigene EXE auslagern?
+1)	Vieleicht Web-Oberfläche in eigene EXE auslagern? (vermutlich aber keine Arbeitsspeicherersparnis.)
 2)	Ist Emails empfangen sinnvoll?
 3)	Emails können zur Zeit nur ohne Empfangsbestätigung versand werden, da kein Empfang implementiert ist.
+4)	Autom. Entsperren der SIM-Karte mit PIN ist nicht getestet.

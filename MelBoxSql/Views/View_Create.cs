@@ -26,7 +26,7 @@
                                     "ON FromId = c.Id; ";
             Sql.NonQuery(query2);
 
-            const string query3 = "CREATE VIEW " + Sent_ViewName + " AS SELECT strftime('%Y-%m-%d %H:%M:%S',SentTime) AS Gesendet, c.name AS An, Content AS Inhalt, Via AS Via, Confirmation AS Sendestatus " +
+            const string query3 = "CREATE VIEW " + Sent_ViewName + " AS SELECT strftime('%Y-%m-%d %H:%M:%S',SentTime) AS Gesendet, c.name AS An, Content AS Inhalt, Reference AS Ref, ToVia AS Via, Confirmation AS Sendestatus " +
                                     "FROM Sent AS ls JOIN Contact AS c ON ToId = c.Id JOIN Message AS mc ON mc.id = ls.ContentId; ";
             Sql.NonQuery(query3);
 

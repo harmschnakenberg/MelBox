@@ -70,7 +70,7 @@ namespace MelBoxCore
                     MelBoxWeb.GsmStatus.PinStatus = e.Value.ToString();
                     break;
                 case Gsm.Modem.ModemError:
-                    MelBoxWeb.GsmStatus.LastError = DateTime.Now.ToLongTimeString() + " - " + e.Value.ToString();
+                    MelBoxWeb.GsmStatus.LastError = DateTime.Now.ToString("G") + " - " + e.Value.ToString();
 
                     if (LastModemError.Length == 0 || LastModemError != e.Value.ToString())
                     {
@@ -183,7 +183,7 @@ namespace MelBoxCore
             string emailSuffix = string.Empty;
 
             Random ran = new Random();
-            int emailId = ran.Next(256, int.MaxValue); // Pseudo-Id für Sendungsverfolgung
+            int emailId = ran.Next(256, 9999); // Pseudo-Id für Sendungsverfolgung
 
             if (e.Message.ToLower().Trim() == SmsWayValidationTrigger.ToLower()) // SmsAbruf?
             {
@@ -263,6 +263,23 @@ namespace MelBoxCore
             Email.Send(emailRecievers, body, subject, emailId);
 
             #endregion
+        }
+
+        private static void Gsm_SmsSentFaildEvent(object sender, ParseSms e)
+        {
+            string Text = $"Für die SMS  >{e.InternalReference}<\r\n" +
+                            $"An >{e.Sender}<\r\n" +
+                            $"Text >{e.Message}<\r\n" +
+                            $"ist seit >{e.TimeUtc.ToLocalTime()}< keine Empfangsbestätigung eingegangen. \r\n" +
+                            $"Senden abgebrochen. Kein erneuter Sendeversuch an Empfänger.";
+
+            MelBoxSql.Tab_Log.Insert(Tab_Log.Topic.Gsm, 1, Text.Replace("\r\n", " "));
+            Email.Send(Email.Admin, Text, "Senden fehlgeschlagen: " + e.Message);
+        }
+
+        private static void Gsm_SerialPortDisposed(object sender, EventArgs e)
+        {
+            Console.WriteLine("GSM-Modem getrennt.");
         }
 
         #region Hilfs-Methoden

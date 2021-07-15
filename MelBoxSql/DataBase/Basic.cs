@@ -272,7 +272,6 @@ namespace MelBoxSql
             return NonQuery(query, args);
         }
 
-
         internal static bool Update(string tableName, Dictionary<string, object> set, Dictionary<string, object> where, string delimiter = "AND")
         {
             //UPDATE table_name SET column1 = value1, column2 = value2, ... WHERE condition;

@@ -103,7 +103,7 @@ namespace MelBoxGsm
                     }
 #pragma warning restore CA1031 // Do not catch general exception types
 
-                    kickoffRead();
+                    if (IsOpen) kickoffRead();
                 }, null)); kickoffRead();
             }
 #pragma warning disable CA1031 // Do not catch general exception types

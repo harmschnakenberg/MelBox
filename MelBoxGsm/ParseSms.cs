@@ -178,7 +178,7 @@ namespace MelBoxGsm
                 if (WaitingForStatusReport.Exists(x => x.Index == reference))
                 {
                     var sms = WaitingForStatusReport.Find(x => x.Index == reference);
-                    Console.WriteLine($"Erwartete Empfangsbestätigung eingetroffen für Nachricht [{sms.InternalReference}] {sms.Message}");
+                    Console.WriteLine($"Erwartete Empfangsbestätigung eingetroffen für Nachricht [{sms.InternalReference}] an >{sms.Sender}<\r\n>{sms.Message}<");
                     WaitingForStatusReport.Remove(sms);
                 }
 

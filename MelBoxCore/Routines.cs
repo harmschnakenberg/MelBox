@@ -26,12 +26,12 @@ namespace MelBoxCore
             execute.Elapsed += new ElapsedEventHandler(HourlySenderCheck);
             execute.Elapsed += new ElapsedEventHandler(DailyNotification);
             execute.Elapsed += new ElapsedEventHandler(DailyBackup);
+            execute.Elapsed += new ElapsedEventHandler(GetUsedMemory);
 
             execute.AutoReset = false;
-            execute.Start();
-
-            
+            execute.Start();   
         }
+
 
         /// <summary>
         /// Tägliche Kontroll-SMS versenden
@@ -93,5 +93,16 @@ namespace MelBoxCore
             SetHourTimer();
         }
 
+        private static void GetUsedMemory(object sender, ElapsedEventArgs e)
+        {
+            using (System.Diagnostics.Process proc = System.Diagnostics.Process.GetCurrentProcess())
+            {
+                // The proc.PrivateMemorySize64 will returns the private memory usage in byte.
+                // Would like to Convert it to Megabyte? divide it by 2^20
+                long memory = proc.PrivateMemorySize64 / (1024 * 1024);
+
+                Console.WriteLine($"Zurzeit belegter Speicher: {memory} MB");
+            }
+        }
     }
 }
